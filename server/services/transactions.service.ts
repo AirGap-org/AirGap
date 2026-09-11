@@ -128,7 +128,10 @@ export const getUserTransactions = async (userId: string) => {
         date: transactions.date,
         typeTransaction: transactions.typeTransaction,
         categoryName: categories.name,
-        categoryId: categories.id
+        categoryId: categories.id,
+        recurrence: transactions.recurrence,
+        startRecurrence: transactions.startRecurrence,
+        endRecurrence: transactions.endRecurrence
     })
         .from(transactions)
         .leftJoin(assoTransactionsCategories, eq(transactions.id, assoTransactionsCategories.transactionId))

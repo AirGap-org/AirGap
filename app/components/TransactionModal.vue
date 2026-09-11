@@ -2,7 +2,8 @@
   <div v-if="isOpen" class="fixed inset-0 z-50 flex items-center justify-center">
     <div class="fixed inset-0 dark:bg-neutral-900/60 backdrop-blur-sm" @click="closeModal"/>
 
-    <Card class="w-full max-w-md mx-auto relative bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-500 dark:border-neutral-700 hover:shadow-md transition-shadow duration-300">
+    <Card
+        class="w-full max-w-md mx-auto relative bg-white dark:bg-neutral-900 rounded-lg shadow-sm border border-gray-500 dark:border-neutral-700 hover:shadow-md transition-shadow duration-300">
       <CardHeader>
         <CardTitle class="text-neutral-900 dark:text-white">
           {{ isEditing ? 'Modifier la transaction' : 'Nouvelle transaction' }}
@@ -79,7 +80,8 @@
                 <SelectValue placeholder="Sélectionnez une catégorie"/>
               </SelectTrigger>
               <SelectContent class="dark:bg-neutral-700 bg-white">
-                <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" v-for="cat in filteredCategories" :key="cat.id" :value="cat.id.toString()">
+                <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer"
+                            v-for="cat in filteredCategories" :key="cat.id" :value="cat.id.toString()">
                   {{ cat.name }}
                 </SelectItem>
               </SelectContent>
@@ -90,7 +92,10 @@
             </p>
           </Field>
 
-          <Field class="mt-3">
+          <Field>
+            <FieldLabel for="date"
+                        class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Date
+            </FieldLabel>
             <Popover>
               <PopoverTrigger as-child>
                 <Button
@@ -107,11 +112,77 @@
               <PopoverContent class="w-auto p-0 dark:bg-neutral-700 bg-white" align="start">
                 <Calendar
                     v-model="form.date"
-                    class= "cursor-pointer"
+                    class="cursor-pointer"
                 />
               </PopoverContent>
             </Popover>
           </Field>
+          <Field>
+            <FieldLabel for="recurrence" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mt-3">
+              Récurrence
+            </FieldLabel>
+            <div class="flex items-center gap-2">
+              <Checkbox id="recurrence" v-model="isRecurrence" class="h-4 w-4 shrink-0"/>
+              <Label for="recurrence" class="text-neutral-700 dark:text-neutral-300">Ajouter comme récurrence</Label>
+            </div>
+
+            <div v-if="isRecurrence" class="mt-2 space-y-2">
+              <div>
+                <FieldLabel for="recurrenceFrequency"
+                            class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Fréquence
+                </FieldLabel>
+                <Select v-model="form.recurrenceToken" aria-label="Sélectionnez une fréquence">
+                  <SelectTrigger id="recurrenceFrequency" class="w-full">
+                    <SelectValue placeholder="Sélectionnez une fréquence"/>
+                  </SelectTrigger>
+                  <SelectContent class="dark:bg-neutral-700 bg-white">
+                    <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="daily">
+                      Quotidienne
+                    </SelectItem>
+                    <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="weekly">
+                      Hebdomadaire
+                    </SelectItem>
+                    <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="monthly">
+                      Mensuelle
+                    </SelectItem>
+                    <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="yearly">
+                      Annuelle
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <div class="grid grid-cols-2 gap-2 mt-2">
+                  <div>
+                    <label class="block text-sm text-neutral-700 dark:text-neutral-300">
+                    <Input aria-label="Début recurrence" type="date" v-model="form.startRecurrence" class="w-full mt-1"/>
+                      Début
+                    </label>
+                  </div>
+                  <div>
+                    <label class="block text-sm text-neutral-700 dark:text-neutral-300">
+                    <Input aria-label="Fin recurrence" type="date" v-model="form.endRecurrence" class="w-full mt-1"/>
+                      Fin (optionnel)
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </Field>
+          <Select>
+            <SelectContent>
+              <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="daily">
+                Quotidienne
+              </SelectItem>
+              <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="weekly">
+                Hebdomadaire
+              </SelectItem>
+              <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="monthly">
+                Mensuelle
+              </SelectItem>
+              <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" value="yearly">Annuelle
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </CardContent>
         <CardFooter class="gap-3">
           <Button
@@ -159,14 +230,19 @@ const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emits('update:modelValue', value)
 });
+const isRecurrence = ref(false);
 const isEditing = computed(() => !!props.transaction);
 const today = new Date().toISOString().split('T')[0];
 const form = ref({
   description: '',
   amount: '',
   type: '',
+  recurrence: false,
+  recurrenceToken: 'none',
   categoryId: null,
   date: undefined,
+  startRecurrence: undefined,
+  endRecurrence: undefined,
 });
 
 // --- API : CHARGEMENT CATÉGORIES ---
@@ -217,8 +293,13 @@ watch(
           amount: newTransaction.amount,
           type: formType,
           categoryId: newTransaction.categoryId || null,
-          date: formattedDate
+          date: formattedDate,
+          recurrence: newTransaction.recurrence && newTransaction.recurrence !== 'none',
+          recurrenceToken: newTransaction.recurrence || 'none',
+          startRecurrence: newTransaction.startRecurrence ? new Date(newTransaction.startRecurrence).toISOString().split('T')[0] : undefined,
+          endRecurrence: newTransaction.endRecurrence ? new Date(newTransaction.endRecurrence).toISOString().split('T')[0] : undefined,
         };
+        isRecurrence.value = form.value.recurrence;
       }
     },
     {immediate: true}
@@ -245,7 +326,26 @@ const submitForm = async () => {
   try {
     isLoading.value = true;
 
-    const typeFormat= form.value.type === 'income' ? 'revenu' : 'depense';
+    const typeFormat = form.value.type === 'income' ? 'revenu' : 'depense';
+
+    // recurrence handling
+    const recurrenceToken = isRecurrence.value ? (form.value.recurrenceToken || 'monthly') : 'none';
+    if (recurrenceToken !== 'none') {
+      if (!form.value.startRecurrence) {
+        alert("Attention la date de début de récurrence n'est pas sélectionnée.");
+        isLoading.value = false;
+        return;
+      }
+      const start = new Date(form.value.startRecurrence);
+      if (form.value.endRecurrence) {
+        const end = new Date(form.value.endRecurrence);
+        if (start > end) {
+          alert("La date de début de récurrence doit être antérieure à la date de fin.");
+          isLoading.value = false;
+          return;
+        }
+      }
+    }
 
     const payload = {
       description: form.value.description,
@@ -253,6 +353,9 @@ const submitForm = async () => {
       date: form.value.date ? form.value.date.toString() : undefined,
       typeTransaction: typeFormat,
       categoryId: form.value.categoryId,
+      recurrence: recurrenceToken,
+      startRecurrence: form.value.startRecurrence ? new Date(form.value.startRecurrence).toISOString() : null,
+      endRecurrence: form.value.endRecurrence ? new Date(form.value.endRecurrence).toISOString() : null,
       accountId: null
     };
 

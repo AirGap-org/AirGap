@@ -13,8 +13,11 @@ const updateTransactionSchema = z.object({
     date: z.coerce.date().optional(),
     typeTransaction: z.enum(["depense", "revenu", "non_categorise"]).optional(),
     categoryId: z.string().uuid().nullable().optional(),
-    accountId: z.string().uuid().nullable().optional()
-})
+    accountId: z.string().uuid().nullable().optional(),
+    recurrence: z.enum(['none', 'daily', 'weekly', 'monthly', 'yearly']).optional(),
+    startRecurrence: z.coerce.date().nullable().optional(),
+    endRecurrence: z.coerce.date().nullable().optional(),
+});
 
 export default defineEventHandler(async (event) => {
     const user = await requireAuth(event)
@@ -27,6 +30,22 @@ export default defineEventHandler(async (event) => {
     const body = await readValidatedBody(event, (b) => updateTransactionSchema.safeParse(b))
     if (!body.success) {
         throw createError({statusCode: 400, message: body.error.issues[0]?.message})
+    }
+
+    const data = body.data;
+    const recurrence = data.recurrence ?? undefined;
+    if (recurrence && recurrence !== 'none') {
+        if (!data.startRecurrence) {
+            throw createError({
+                statusCode: 400, message: "startRecurrence est requis pour une récurrence."
+            });
+        }
+        if (data.endRecurrence && data.startRecurrence > data.endRecurrence) {
+            throw createError({
+                statusCode: 400,
+                message: "startRecurrence doit être antérieur ou égal à endRecurrence."
+            });
+        }
     }
 
     if (Object.keys(body.data).length === 0) {
@@ -42,8 +61,11 @@ export default defineEventHandler(async (event) => {
     const dataToUpdate = {
         ...transactionFields,
         amount: transactionFields.amount === undefined ? undefined : String(transactionFields.amount),
+        recurrence: data.recurrence === undefined ? undefined : data.recurrence,
+        startRecurrence: data.startRecurrence === undefined ? undefined : data.startRecurrence,
+        endRecurrence: data.endRecurrence === undefined ? undefined : data.endRecurrence,
         updatedAt: new Date()
-    }
+    };
 
     try {
         const updatedTransaction = await updateTransaction(
