@@ -55,6 +55,11 @@
 import { ref } from 'vue';
 import CsvImportModal from '~/components/CsvImportModal.vue';
 
+// --- CONFIGURATION ---
+definePageMeta({
+  middleware: ['authenticated']
+});
+
 // --- STATE ---
 const csvImportModalOpen = ref(false);
 
