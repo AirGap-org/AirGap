@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div v-if="loggedIn">
     <header class="fixed inset-x-0 top-0 mx-auto w-full max-w-6xl z-50 bg-white dark:bg-neutral-900 border border-t-0 border-neutral-200 dark:border-neutral-750 rounded-b-lg shadow-xl transition-colors duration-300">
       <div class="px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16">
