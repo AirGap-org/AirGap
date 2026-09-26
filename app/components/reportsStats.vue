@@ -61,25 +61,31 @@
               <p>Aucune donnée.</p>
             </div>
             <div v-else class="flex flex-col h-full w-full dark:unovis-dark-mode">
-              <ChartContainer :config="chartConfig">
-                <VisSingleContainer :data="cashFlow" class="h-full w-full sankeyGraph">
-                  <VisSankey
-                      :node-id="(d) => d.id"
-                      :node-label="(d) => d.label"
-                      :source="(d) => d.source"
-                      :target="(d) => d.target"
-                      :value="(d) => d.value"
-                      :node-color="(d) => ({
-                                             income: THEME.colors.income,
-                                             expense: THEME.colors.expense,
-                                             budget: THEME.colors.balance
-                      }[d.type])"
-                      :node-width="20"
-                      :node-padding="15"
-                  />
-                  <ChartTooltip/>
-                </VisSingleContainer>
-              </ChartContainer>
+              <div class="relative w-full h-[420px] sm:h-[480px] lg:h-[560px] overflow-x-auto overflow-y-hidden rounded-lg px-1 sm:px-0">
+                <ChartContainer class="h-full w-[780px] min-w-[780px] sm:w-full sm:min-w-0 !aspect-auto" :config="chartConfig">
+                  <VisSingleContainer :data="cashFlow" class="h-full w-full sankeyGraph">
+                    <VisSankey
+                        :node-id="(d) => d.id"
+                        :node-label="(d) => d.label"
+                        :source="(d) => d.source"
+                        :target="(d) => d.target"
+                        :value="(d) => d.value"
+                        :node-color="(d) => ({
+                                               income: THEME.colors.income,
+                                               expense: THEME.colors.expense,
+                                               budget: THEME.colors.balance
+                        }[d.type])"
+                        :node-width="20"
+                        :node-padding="12"
+                        :node-horizontal-spacing="170"
+                        :label-fit="'wrap'"
+                        :label-max-width="220"
+                        :label-force-word-break="true"
+                    />
+                    <ChartTooltip/>
+                  </VisSingleContainer>
+                </ChartContainer>
+              </div>
             </div>
           </ClientOnly>
         </CardContent>
@@ -373,12 +379,22 @@ const currentYearBalanceData = computed(() => {
 });
 </script>
 <style>
+.sankeyGraph {
+  height: 100%;
+  width: 100%;
+  min-height: 100%;
+}
+
+.sankeyGraph svg {
+  overflow: visible;
+}
+
 .sankeyGraph g rect {
   transition: opacity 0.2s ease;
 }
 
 .sankeyGraph path {
-  opacity: 0.5;
+  opacity: 0.45;
   transition: opacity 0.3s ease;
 }
 
@@ -390,6 +406,11 @@ html.dark .sankeyGraph text {
   fill: #ffffff !important;
 }
 
+.sankeyGraph text {
+  font-size: 10px;
+  letter-spacing: 0.01em;
+}
+
 rect[height="0"],
 rect[height^="0."],
 rect:not([height]) {
@@ -399,6 +420,12 @@ rect:not([height]) {
 g[class*="bar"] rect {
   stroke-width: 0 !important;
   rx: 4px;
+}
+
+@media (min-width: 640px) {
+  .sankeyGraph text {
+    font-size: 12px;
+  }
 }
 
 html.dark {
