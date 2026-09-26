@@ -6,7 +6,6 @@ import {typeTransactionEnum} from "./typeTransactions";
 import {assoTransactionsCategories} from "./assoTransactionsCategories";
 import {users} from "./users";
 
-// Table Transactions
 export const transactions = pgTable('transactions', {
     id: uuid('id').primaryKey().defaultRandom().notNull(),
     userId: uuid('userId').notNull().references(() => users.id).notNull(),

@@ -306,74 +306,94 @@ watch(
 );
 
 // --- SUBMIT ---
-const submitForm = async () => {
-
+const validateRequiredFields = () => {
   if (!form.value.date) {
     alert("Attention la date n'est pas sélectionnée.");
-    return;
+    return false;
   }
 
   if (!form.value.categoryId) {
     alert("Attention la catégorie n'est pas sélectionnée.");
-    return;
+    return false;
   }
 
   if (!form.value.type) {
     alert("Attention le type n'est pas sélectionné.");
+    return false;
+  }
+
+  return true;
+};
+
+const validateRecurrence = () => {
+  const recurrenceToken = isRecurrence.value ? (form.value.recurrenceToken || 'monthly') : 'none';
+
+  if (recurrenceToken === 'none') {
+    return recurrenceToken;
+  }
+
+  if (!form.value.startRecurrence) {
+    alert("Attention la date de début de récurrence n'est pas sélectionnée.");
+    return null;
+  }
+
+  const start = new Date(form.value.startRecurrence);
+  if (form.value.endRecurrence && start > new Date(form.value.endRecurrence)) {
+    alert("La date de début de récurrence doit être antérieure à la date de fin.");
+    return null;
+  }
+
+  return recurrenceToken;
+};
+
+const buildTransactionPayload = (recurrenceToken) => {
+  const typeFormat = form.value.type === 'income' ? 'revenu' : 'depense';
+
+  return {
+    description: form.value.description,
+    amount: Number(form.value.amount),
+    date: form.value.date ? form.value.date.toString() : undefined,
+    typeTransaction: typeFormat,
+    categoryId: form.value.categoryId,
+    recurrence: recurrenceToken,
+    startRecurrence: form.value.startRecurrence ? new Date(form.value.startRecurrence).toISOString() : null,
+    endRecurrence: form.value.endRecurrence ? new Date(form.value.endRecurrence).toISOString() : null,
+    accountId: null
+  };
+};
+
+const saveTransaction = async (payload) => {
+  if (isEditing.value) {
+    const response = await $fetch(`/api/transactions/${props.transaction.id}`, {
+      method: 'PATCH',
+      body: payload
+    });
+    emits('transaction-updated', response.transaction || response);
+    return;
+  }
+
+  const response = await $fetch('/api/transactions', {
+    method: 'POST',
+    body: payload
+  });
+  emits('transaction-added', response.transaction || response);
+};
+
+const submitForm = async () => {
+  if (!validateRequiredFields()) {
     return;
   }
 
   try {
     isLoading.value = true;
 
-    const typeFormat = form.value.type === 'income' ? 'revenu' : 'depense';
-
-    // recurrence handling
-    const recurrenceToken = isRecurrence.value ? (form.value.recurrenceToken || 'monthly') : 'none';
-    if (recurrenceToken !== 'none') {
-      if (!form.value.startRecurrence) {
-        alert("Attention la date de début de récurrence n'est pas sélectionnée.");
-        isLoading.value = false;
-        return;
-      }
-      const start = new Date(form.value.startRecurrence);
-      if (form.value.endRecurrence) {
-        const end = new Date(form.value.endRecurrence);
-        if (start > end) {
-          alert("La date de début de récurrence doit être antérieure à la date de fin.");
-          isLoading.value = false;
-          return;
-        }
-      }
+    const recurrenceToken = validateRecurrence();
+    if (!recurrenceToken) {
+      return;
     }
 
-    const payload = {
-      description: form.value.description,
-      amount: Number(form.value.amount),
-      date: form.value.date ? form.value.date.toString() : undefined,
-      typeTransaction: typeFormat,
-      categoryId: form.value.categoryId,
-      recurrence: recurrenceToken,
-      startRecurrence: form.value.startRecurrence ? new Date(form.value.startRecurrence).toISOString() : null,
-      endRecurrence: form.value.endRecurrence ? new Date(form.value.endRecurrence).toISOString() : null,
-      accountId: null
-    };
-
-    let response;
-
-    if (isEditing.value) {
-      response = await $fetch(`/api/transactions/${props.transaction.id}`, {
-        method: 'PATCH',
-        body: payload
-      });
-      emits('transaction-updated', response.transaction || response);
-    } else {
-      response = await $fetch('/api/transactions', {
-        method: 'POST',
-        body: payload
-      });
-      emits('transaction-added', response.transaction || response);
-    }
+    const payload = buildTransactionPayload(recurrenceToken);
+    await saveTransaction(payload);
     closeModal();
   } catch (error) {
     console.error('Erreur:', error);
