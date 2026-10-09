@@ -47,6 +47,7 @@
     "unstorage": "^1.17.5",
     "vue": "^3.5.31",
     "vue-router": "^5.0.4",
+    "yahoo-finance2": "^4.0.3",
     "zod": "^4.3.6"
   },
   "devDependencies": {
