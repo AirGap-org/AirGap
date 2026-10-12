@@ -1,6 +1,7 @@
 import {getUserTransactions} from "#server/services/transactions.service";
+import { H3Event, EventHandlerRequest } from "h3";
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async (event: H3Event<EventHandlerRequest>) => {
     const user = await requireAuth(event)
 
     try {

@@ -4,6 +4,7 @@ import { accounts } from "./accounts";
 import { budgets } from "./budgets";
 import { transactions } from "./transactions";
 import { categories } from "./categories";
+import { portfolio } from "./portfolio";
 
 export const users = pgTable('users', {
     id: uuid('id').primaryKey().defaultRandom().notNull(),
@@ -23,4 +24,5 @@ export const userRelations = relations(users, ({many}) => ({
     budgets: many(budgets),
     transactions: many(transactions),
     categories: many(categories),
+    portfolio: many(portfolio),
 }));

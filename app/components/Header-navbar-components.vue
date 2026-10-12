@@ -18,6 +18,9 @@
               <NuxtLink to="/transactions">Transactions</NuxtLink>
             </Button>
             <Button class="nav-link" active-class="nav-link-active">
+              <NuxtLink to="/market">Portfolio</NuxtLink>
+            </Button>
+            <Button class="nav-link" active-class="nav-link-active">
               <NuxtLink to="/budget">Budgets</NuxtLink>
             </Button>
             <Button class="nav-link" active-class="nav-link-active">

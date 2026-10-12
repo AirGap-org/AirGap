@@ -8,3 +8,4 @@ export * from './assoTransactionsCategories';
 export * from './assoAccountsCategories';
 export * from './senderRecipient';
 export * from './typeTransactions';
+export * from './portfolio';
