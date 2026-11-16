@@ -52,14 +52,14 @@
         <div class="animate-spin rounded-lg h-12 w-12 border-t-2 border-b-2 border-primary-600"/>
       </div>
 
-      <reportsStats v-else :transactions="transactions"/>
+      <reportsStats v-else />
 
     </div>
   </div>
 </template>
 
 <script setup>
-import {computed, onMounted} from 'vue';
+import {computed} from 'vue';
 
 useHead({
   title: 'AirGap | Accueil',
@@ -70,55 +70,20 @@ definePageMeta({
   middleware: ['authenticated']
 });
 
-const { data: apiResult, pending: loading, refresh } = useAsyncData(
-    'dashboard-transactions',
-    () => $fetch('/api/transactions'),
+const { data: dashboard, pending: loading } = useAsyncData(
+    'dashboard',
+    () => $fetch('/api/dashboard'),
     {
       lazy: true,
       server: true,
     }
 );
 
-const transactions = computed(() => {
-  const list = apiResult.value?.transactions || [];
-
-  const formatted = list.map(t => ({
-    ...t,
-    amount: Math.abs(Number(t.amount)),
-    typeStr: t.typeTransaction === 'revenu' ? 'income' : 'expense',
-    dateObj: new Date(t.date),
-    categoryName: t.category?.name || 'Aucune'
-  }));
-
-  const chronological = formatted.sort((a, b) => a.dateObj.getTime() - b.dateObj.getTime());
-
-  let currentRunningBalance = 0;
-
-  const withCumulative = chronological.map(t => {
-    const change = t.typeTransaction === 'revenu' ? t.amount : -t.amount;
-    currentRunningBalance += change;
-
-    return {
-      ...t,
-      cumulativeBalance: currentRunningBalance
-    };
-  });
-  return [...withCumulative].sort((a, b) => b.dateObj.getTime() - a.dateObj.getTime());
-});
-
-const now = new Date();
-const currentMonth = now.getMonth();
-const currentYear = now.getFullYear();
-
-const getPreviousMonth = (year, month) => month === 0 ? {year: year - 1, month: 11} : {year, month: month - 1};
-const {year: prevYear, month: prevMonth} = getPreviousMonth(currentYear, currentMonth);
-
-const balance = computed(() => transactions.value.reduce((total, t) => total + (t.typeStr === 'income' ? t.amount : -t.amount), 0));
-const monthlyIncome = computed(() => transactions.value.filter(t => t.typeStr === 'income' && t.dateObj.getMonth() === currentMonth && t.dateObj.getFullYear() === currentYear).reduce((sum, t) => sum + t.amount, 0));
-const monthlyExpense = computed(() => transactions.value.filter(t => t.typeStr === 'expense' && t.dateObj.getMonth() === currentMonth && t.dateObj.getFullYear() === currentYear).reduce((sum, t) => sum + t.amount, 0));
-
-const prevIncome = computed(() => transactions.value.filter(t => t.typeStr === 'income' && t.dateObj.getMonth() === prevMonth && t.dateObj.getFullYear() === prevYear).reduce((sum, t) => sum + t.amount, 0));
-const prevExpense = computed(() => transactions.value.filter(t => t.typeStr === 'expense' && t.dateObj.getMonth() === prevMonth && t.dateObj.getFullYear() === prevYear).reduce((sum, t) => sum + t.amount, 0));
+const balance = computed(() => dashboard.value?.totals.balance ?? 0)
+const monthlyIncome = computed(() => dashboard.value?.currentMonth.income ?? 0)
+const monthlyExpense = computed(() => dashboard.value?.currentMonth.expense ?? 0)
+const prevIncome = computed(() => dashboard.value?.previousMonth.income ?? 0)
+const prevExpense = computed(() => dashboard.value?.previousMonth.expense ?? 0)
 
 const incomeChange = computed(() => prevIncome.value === 0 ? null : ((monthlyIncome.value - prevIncome.value) / Math.abs(prevIncome.value)) * 100);
 const expenseChange = computed(() => prevExpense.value === 0 ? null : ((monthlyExpense.value - prevExpense.value) / Math.abs(prevExpense.value)) * 100);
@@ -134,8 +99,4 @@ const formatPercent = (val) => {
   const sign = val > 0 ? '+' : '';
   return `${sign}${val.toFixed(1)}%`;
 };
-
-onMounted(() => {
-  refresh();
-})
 </script>

@@ -18,6 +18,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check-emails": "tsx scripts/check-email-duplicates.ts",
+    "db:backfill-signatures": "tsx scripts/backfill-signatures.ts",
     "db:reencrypt": "tsx scripts/reencrypt.ts",
     "postinstall": "nuxt prepare"
   },

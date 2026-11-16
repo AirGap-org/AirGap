@@ -2,6 +2,57 @@ import {and, desc, eq} from 'drizzle-orm'
 import {db} from "#server/db";
 import {assoBudgetCategories, budgets, categories} from "~~/drizzle/schema";
 
+type BudgetWithCategories = {
+    id: string;
+    name: string;
+    amount: string;
+    startDate: Date;
+    endDate: Date;
+    accountId: string | null;
+    categories: { id: string; name: string }[];
+};
+
+type BudgetRow = {
+    id: string;
+    name: string;
+    amount: string;
+    startDate: Date;
+    endDate: Date;
+    accountId: string | null;
+    categoryName: string | null;
+    categoryId: string | null;
+};
+
+const mapBudgetRows = (rows: BudgetRow[]): BudgetWithCategories[] => {
+    const budgetsMap = new Map<string, BudgetWithCategories>();
+
+    for (const row of rows) {
+        if (!budgetsMap.has(row.id)) {
+            budgetsMap.set(row.id, {
+                id: row.id,
+                name: row.name,
+                amount: row.amount,
+                startDate: row.startDate,
+                endDate: row.endDate,
+                accountId: row.accountId,
+                categories: []
+            });
+        }
+
+        if (row.categoryId) {
+            const budget = budgetsMap.get(row.id);
+            if (budget && !budget.categories.some((c) => c.id === row.categoryId)) {
+                budget.categories.push({
+                    id: row.categoryId,
+                    name: row.categoryName ?? '',
+                });
+            }
+        }
+    }
+
+    return Array.from(budgetsMap.values());
+};
+
 export const getUserBudgets = async (userId: string) => {
     const rows = await db.select({
         id: budgets.id,
@@ -20,43 +71,7 @@ export const getUserBudgets = async (userId: string) => {
         .where(eq(budgets.userId, userId))
         .orderBy(desc(budgets.startDate));
 
-    type BudgetWithCategories = {
-        id: string;
-        name: string;
-        amount: string;
-        startDate: Date;
-        endDate: Date;
-        accountId: string | null;
-        categories: { id: string; name: string }[];
-    };
-
-    const budgetsMap = new Map<string, BudgetWithCategories>();
-
-    for (const row of rows) {
-        if (!budgetsMap.has(row.id)) {
-            budgetsMap.set(row.id, {
-                id: row.id,
-                name: row.name,
-                amount: row.amount,
-                startDate: row.startDate,
-                endDate: row.endDate,
-                accountId: row.accountId,
-                categories: [] // On prépare le tableau
-            });
-        }
-
-        if (row.categoryId) {
-            const budget = budgetsMap.get(row.id);
-            if (budget && !budget.categories.some((c) => c.id === row.categoryId)) {
-                budget.categories.push({
-                    id: row.categoryId,
-                    name: row.categoryName ?? '',
-                });
-            }
-        }
-    }
-
-    return Array.from(budgetsMap.values());
+    return mapBudgetRows(rows);
 }
 
 export const createBudget = async (
@@ -165,6 +180,20 @@ export const deleteBudget = async (budgetId: string, userId: string) => {
 }
 
 export const getBudgetById = async (budgetId: string, userId: string) => {
-    const result = await getUserBudgets(userId);
-    return result.find(b => b.id === budgetId) || null;
+    const rows = await db.select({
+        id: budgets.id,
+        name: budgets.name,
+        amount: budgets.amount,
+        startDate: budgets.startDate,
+        endDate: budgets.endDate,
+        accountId: budgets.accountId,
+        categoryName: categories.name,
+        categoryId: categories.id,
+    })
+        .from(budgets)
+        .leftJoin(assoBudgetCategories, eq(budgets.id, assoBudgetCategories.budgetId))
+        .leftJoin(categories, eq(assoBudgetCategories.categoryId, categories.id))
+        .where(and(eq(budgets.id, budgetId), eq(budgets.userId, userId)));
+
+    return mapBudgetRows(rows)[0] ?? null;
 }

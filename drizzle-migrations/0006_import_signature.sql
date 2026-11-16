@@ -1,0 +1,2 @@
+ALTER TABLE "transactions" ADD COLUMN "import_signature" varchar(64);--> statement-breakpoint
+CREATE UNIQUE INDEX "transactions_user_signature_idx" ON "transactions" USING btree ("userId","import_signature");

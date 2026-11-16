@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { db } from '#server/db'
 import { budgets } from '~~/drizzle/schema'
-import { deleteBudget } from '#server/services/budgets.service'
+import { deleteBudget, getBudgetById } from '#server/services/budgets.service'
 import { budgetAssociations, createBudget, createCategory, createUser, resetDb } from '../helpers/db'
 
 describe('budgets IDOR', () => {
@@ -28,6 +28,19 @@ describe('budgets IDOR', () => {
         const associations = await budgetAssociations(victimBudget.id)
         expect(associations).toHaveLength(1)
         expect(associations[0]?.categoryId).toBe(victimCategory.id)
+    })
+
+    it("ne retourne pas un budget appartenant à un autre utilisateur", async () => {
+        const victim = await createUser()
+        const attacker = await createUser()
+        const category = await createCategory(victim.id)
+        const budget = await createBudget(victim.id, category.id)
+
+        expect(await getBudgetById(budget.id, attacker.id)).toBeNull()
+
+        const owned = await getBudgetById(budget.id, victim.id)
+        expect(owned?.id).toBe(budget.id)
+        expect(owned?.categories).toHaveLength(1)
     })
 
     it('supprime bien le budget et ses associations pour le propriétaire', async () => {

@@ -1,4 +1,4 @@
-import {pgTable, uuid, timestamp, numeric, varchar, text, index} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, timestamp, numeric, varchar, text, index, uniqueIndex} from 'drizzle-orm/pg-core';
 import {accounts} from './accounts';
 import {relations} from "drizzle-orm";
 import {senderRecipient} from "./senderRecipient";
@@ -20,6 +20,7 @@ export const transactions = pgTable('transactions', {
     startRecurrence: timestamp('startRecurrence').notNull(),
     endRecurrence: timestamp('endRecurrence'),
     date: timestamp('date').notNull().defaultNow(),
+    importSignature: varchar('import_signature', { length: 64 }),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
 }, (table) => {
@@ -27,6 +28,7 @@ export const transactions = pgTable('transactions', {
         index('transactions_user_date_idx').on(table.userId, table.date),
         index('transactions_user_type_idx').on(table.userId, table.typeTransaction),
         index('transactions_account_idx').on(table.accountId),
+        uniqueIndex('transactions_user_signature_idx').on(table.userId, table.importSignature),
     ];
 });
 
