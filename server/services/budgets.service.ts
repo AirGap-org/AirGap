@@ -145,6 +145,14 @@ export const updateBudget = async (
 
 export const deleteBudget = async (budgetId: string, userId: string) => {
     return await db.transaction(async (tx) => {
+        // Vérifier l'appartenance AVANT de toucher aux associations.
+        const owned = await tx.select({ id: budgets.id })
+            .from(budgets)
+            .where(and(eq(budgets.id, budgetId), eq(budgets.userId, userId)))
+            .limit(1);
+
+        if (!owned[0]) return undefined;
+
         await tx.delete(assoBudgetCategories)
             .where(eq(assoBudgetCategories.budgetId, budgetId));
 

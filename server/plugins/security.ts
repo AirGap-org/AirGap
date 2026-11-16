@@ -1,4 +1,5 @@
 import { useRuntimeConfig } from '#imports'
+import { isWeakSecret } from '#server/utils/secrets'
 
 /**
  * Validation des secrets et de la configuration critique au démarrage du serveur.
@@ -20,18 +21,20 @@ export default defineNitroPlugin(() => {
     // --- Secret de session ---
     const appSecret = config.appSecret as string | undefined
 
-    if (!appSecret || appSecret.length < 32) {
+    if (isWeakSecret(appSecret)) {
         throw new Error(
-            '🚨 ERREUR CRITIQUE : NUXT_APP_SECRET doit faire au moins 32 caractères. ' +
+            '🚨 ERREUR CRITIQUE : NUXT_APP_SECRET est manquant ou trop faible (32 caractères minimum). ' +
             'Générez une valeur aléatoire forte (ex. `openssl rand -base64 32`).'
         )
     }
 
-    // Valeur par défaut documentée dans .env.example : refus explicite.
-    if (/^0+$/.test(appSecret)) {
+    // --- Clé de chiffrement au repos ---
+    const encryptionKey = process.env.ENCRYPTION_KEY
+
+    if (isWeakSecret(encryptionKey)) {
         throw new Error(
-            '🚨 ERREUR CRITIQUE : NUXT_APP_SECRET contient la valeur par défaut. ' +
-            'Générez une valeur aléatoire forte avant de déployer.'
+            '🚨 ERREUR CRITIQUE : ENCRYPTION_KEY est manquante ou trop faible (32 caractères minimum). ' +
+            'Générez une valeur aléatoire forte (ex. `openssl rand -base64 32`).'
         )
     }
 

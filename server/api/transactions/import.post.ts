@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {importTransactionsBulk} from "#server/services/transactions.service";
 import {assertCategoriesOwnership} from "#server/utils/categories";
+import {assertAccountsOwnership} from "#server/utils/ownership";
 import {getErrorMessage} from "#server/utils/errors";
 
 const importSchema = z.object({
@@ -32,6 +33,13 @@ export default defineEventHandler(async (event) => {
             body.data.transactions
                 .map(transaction => transaction.selectedCategoryId)
                 .filter((categoryId): categoryId is string => Boolean(categoryId)),
+            user.id
+        )
+
+        await assertAccountsOwnership(
+            body.data.transactions
+                .map(transaction => transaction.accountId)
+                .filter((accountId): accountId is string => Boolean(accountId)),
             user.id
         )
 

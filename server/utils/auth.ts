@@ -2,6 +2,7 @@ import type { H3Event } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db } from '#server/db'
 import { users } from '~~/drizzle/schema'
+import { isUserActive } from '#server/utils/userStatus'
 
 declare module '#auth-utils' {
     interface User {
@@ -38,7 +39,7 @@ export const requireAuth = async (event: H3Event) => {
         where: eq(users.id, session.user.id)
     })
 
-    if (!dbUser) {
+    if (!isUserActive(dbUser)) {
         await clearUserSession(event)
         throw createError({
             statusCode: 401,

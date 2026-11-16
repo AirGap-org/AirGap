@@ -40,6 +40,7 @@ export default defineEventHandler(async (event) => {
     }
 
     await resetRateLimit('2fa-enable', session.id)
+    await resetRateLimit('2fa-setup', session.id)
 
     await updateUserTwoFactor(session.id, true, user.twoFactorSecret)
     await updateUserSession(event, { twoFactorEnabled: true })

@@ -1,6 +1,8 @@
-import { createUser, getUserByEmail } from '#server/services/user.service'
+import { getUserByEmail } from '#server/services/user.service'
 import { hashUserPassword, verifyUserPassword } from '#server/utils/hashing'
-import type { users } from '~~/drizzle/schema'
+import { getErrorCode } from '#server/utils/errors'
+import { db } from '#server/db'
+import { accounts, users } from '~~/drizzle/schema'
 
 let dummyHash: string | null = null
 
@@ -12,8 +14,22 @@ const getDummyHash = async () => {
 }
 
 /**
- * Gère l'inscription complète d'un utilisateur
- * Retourne null si l'email est déjà pris (le handler gère l'erreur HTTP)
+ * Champs sûrs à renvoyer au client : jamais de hash ni de secret 2FA.
+ */
+const publicUserColumns = {
+    id: users.id,
+    email: users.email,
+    name: users.name,
+    authProvider: users.authProvider,
+    twoFactorEnabled: users.twoFactorEnabled,
+    createdAt: users.createdAt,
+    updatedAt: users.updatedAt
+}
+
+/**
+ * Gère l'inscription complète d'un utilisateur.
+ * L'utilisateur et son compte courant sont créés dans la même transaction.
+ * Retourne null si l'email est déjà pris (le handler gère l'erreur HTTP).
  */
 export const registerUser = async (data: typeof users.$inferInsert) => {
     const existingUser = await getUserByEmail(data.email)
@@ -25,10 +41,34 @@ export const registerUser = async (data: typeof users.$inferInsert) => {
 
     const hashedPassword = await hashUserPassword(data.password)
 
-    return await createUser({
-        ...data,
-        password: hashedPassword
-    })
+    try {
+        return await db.transaction(async (tx) => {
+            const [newUser] = await tx.insert(users)
+                .values({
+                    ...data,
+                    password: hashedPassword
+                })
+                .returning(publicUserColumns)
+
+            if (!newUser) {
+                throw createError({ statusCode: 500, message: 'Utilisateur non créé' })
+            }
+
+            await tx.insert(accounts).values({
+                userId: newUser.id,
+                accountName: 'Compte Courant',
+                accountType: 'Courant',
+                balance: '0',
+                currency: 'EUR'
+            })
+
+            return newUser
+        })
+    } catch (error) {
+        // Course entre deux inscriptions simultanées : la contrainte unique tranche.
+        if (getErrorCode(error) === '23505') return null
+        throw error
+    }
 }
 
 /**

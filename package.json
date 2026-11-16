@@ -13,6 +13,9 @@
     "preview": "nuxt preview",
     "lint": "eslint .",
     "typecheck": "nuxt typecheck",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "db:reencrypt": "tsx scripts/reencrypt.ts",
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
@@ -59,8 +62,10 @@
     "nuxt-auth-utils": "^0.6.2",
     "shadcn-nuxt": "^2.5.3",
     "tailwindcss": "^4.2.2",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.58.1",
+    "vitest": "^5.1.0",
     "vue-tsc": "^3.3.14"
   }
 }

@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { verifyTOTP } from '@oslojs/otp'
 import { decodeBase32 } from '@oslojs/encoding'
-import { getUserTwoFactorSecret } from '#server/services/user.service'
+import { getUserById, getUserTwoFactorSecret } from '#server/services/user.service'
+import { isUserActive } from '#server/utils/userStatus'
 import { checkRateLimit, consumeRateLimitAttempt, resetRateLimit } from '#server/utils/rateLimit'
 import { requirePendingTwoFactor } from '#server/utils/auth'
 
@@ -41,6 +42,14 @@ export default defineEventHandler(async (event) => {
     }
 
     await resetRateLimit('2fa', session.user.id)
+
+    // Le compte a pu être supprimé ou la 2FA désactivée depuis l'émission du cookie.
+    const dbUser = await getUserById(session.user.id)
+
+    if (!isUserActive(dbUser) || !dbUser.twoFactorEnabled) {
+        await clearUserSession(event)
+        throw createError({ statusCode: 401, message: 'Session invalide ou compte supprimé' })
+    }
 
     await setUserSession(event, {
         user: session.user,

@@ -1,4 +1,4 @@
-import {and, desc, eq} from 'drizzle-orm'
+import {and, desc, eq, isNull, or} from 'drizzle-orm'
 import {assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
 import type {TransactionType} from "~~/drizzle/schema";
 import {db} from "#server/db";
@@ -17,7 +17,7 @@ type ImportedTransaction = {
     selectedCategoryId?: string | null;
     categoryName?: string | null;
     typeTransaction?: TransactionType;
-    userId?: string | null;
+    accountId?: string | null;
 };
 
 const getTransactionSignature = (date: Date, amount: number, description: string) => {
@@ -29,9 +29,11 @@ const resolveCategory = async (
     tx: DbTransaction,
     t: ImportedTransaction,
     typeValue: TransactionType,
-    categoryMap: Map<string, string>
+    categoryMap: Map<string, string>,
+    userId: string
 ): Promise<string | null> => {
-    if (t.selectedCategoryId && categoryMap.has(String(t.selectedCategoryId))) {
+    // L'appartenance de selectedCategoryId est déjà validée par import.post.
+    if (t.selectedCategoryId) {
         return String(t.selectedCategoryId);
     }
 
@@ -42,7 +44,7 @@ const resolveCategory = async (
         const [newCat] = await tx.insert(categories).values({
             name: t.categoryName.trim(),
             typeTransaction: typeValue,
-            userId: t.userId ?? null,
+            userId,
             isDefault: false
         }).returning({id: categories.id});
 
@@ -91,10 +93,21 @@ export const getTransactionById = async (transactionId: string, userId: string) 
 
 export const deleteTransaction = async (transactionId: string, userId: string) => {
     return await db.transaction(async (tx) => {
-        await tx.delete(assoTransactionsCategories).where(eq(assoTransactionsCategories.transactionId, transactionId));
+        // Vérifier l'appartenance AVANT de toucher aux associations.
+        const owned = await tx.select({ id: transactions.id })
+            .from(transactions)
+            .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)))
+            .limit(1);
+
+        if (!owned[0]) return undefined;
+
+        await tx.delete(assoTransactionsCategories)
+            .where(eq(assoTransactionsCategories.transactionId, transactionId));
+
         const [deleted] = await tx.delete(transactions)
             .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)))
             .returning();
+
         return deleted;
     });
 }
@@ -112,6 +125,14 @@ export const updateTransaction = async (
     }
 
     return await db.transaction(async (tx) => {
+        // Vérifier l'appartenance AVANT de modifier les associations.
+        const owned = await tx.select({ id: transactions.id })
+            .from(transactions)
+            .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)))
+            .limit(1);
+
+        if (!owned[0]) return undefined;
+
         const [updated] = await tx.update(transactions)
             .set({...finalUpdateData, updatedAt: new Date()})
             .where(and(
@@ -183,7 +204,7 @@ export const importTransactionsBulk = async (userId: string, rawTransactions: Im
         const categoryMap = new Map<string, string>((await tx.select({
             id: categories.id,
             name: categories.name
-        }).from(categories).where(eq(categories.userId, userId)))
+        }).from(categories).where(or(eq(categories.userId, userId), isNull(categories.userId))))
             .map(c => [c.name.toLowerCase().trim(), c.id]));
 
         const existing = await tx.select().from(transactions).where(eq(transactions.userId, userId));
@@ -206,11 +227,11 @@ export const importTransactionsBulk = async (userId: string, rawTransactions: Im
             }
 
             const typeValue: TransactionType = t.typeTransaction ?? (Number(t.amount) >= 0 ? 'revenu' : 'depense');
-            const matchedId = await resolveCategory(tx, t, typeValue, categoryMap);
+            const matchedId = await resolveCategory(tx, t, typeValue, categoryMap, userId);
 
             transactionsToInsert.push({
                 userId,
-                accountId: null,
+                accountId: t.accountId ?? null,
                 description: encryptText(cleanDesc),
                 amount: String(amount),
                 date: dateObj,

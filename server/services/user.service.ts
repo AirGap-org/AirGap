@@ -17,8 +17,10 @@ export const getUserById = async (userId: string) => {
             email: true,
             name: true,
             authProvider: true,
+            twoFactorEnabled: true,
             createdAt: true,
-            updatedAt: true
+            updatedAt: true,
+            deletedAt: true
         }
     });
 }
