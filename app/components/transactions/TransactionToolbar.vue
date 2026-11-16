@@ -3,6 +3,8 @@
     <Button
         class="cursor-pointer text-white border-neutral-200 dark:border-neutral-750 bg-primary-700 hover:bg-primary-500"
         :disabled="isPredicting || isParsing"
+        title="Les libellés de transactions sont envoyés au service IA externe"
+        aria-label="Catégorisation automatique par IA externe"
         @click="$emit('predict-all')"
     >
       <Sparkles class="h-4 w-4 stroke-[2]"/>

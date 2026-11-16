@@ -1,6 +1,6 @@
 export default defineNuxtConfig({
     compatibilityDate: "2026-03-05",
-    devtools: {enabled: true},
+    devtools: {enabled: process.env.NODE_ENV !== "production"},
     css: ["~/assets/css/styles.css"],
     modules: ["@nuxt/ui", "nuxt-auth-utils", "@nuxt/eslint", "shadcn-nuxt", "@vite-pwa/nuxt"],
 
@@ -22,8 +22,14 @@ export default defineNuxtConfig({
         },
         session: {
             maxAge: 60 * 60 * 24 * 30,
+            cookie: {
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+                path: '/',
+            },
         },
         ai: {
+            enabled: process.env.AI_ENABLED !== 'false',
             predictUrl: process.env.AIRGAP_AI_PREDICT_URL || 'https://airgap-ai.aldwin-weber.fr/predire',
         },
         oauth: {
