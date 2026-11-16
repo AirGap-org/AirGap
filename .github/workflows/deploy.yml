@@ -13,7 +13,7 @@ jobs:
       url: https://airgap.aldwin-weber.fr
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Copy docker-compose.prod.yml via SCP
         uses: appleboy/scp-action@v1
