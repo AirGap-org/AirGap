@@ -7,6 +7,8 @@ export default withNuxt(
         files: ['app/components/ui/**/*.vue'],
         rules: {
             'vue/require-default-prop': 'off',
+            'vue/no-required-prop-with-default': 'off',
+            'vue/one-component-per-file': 'off',
         },
     },
     {

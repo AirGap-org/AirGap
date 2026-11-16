@@ -14,7 +14,8 @@
             </div>
             <div>
               <ItemActions class="flex-row-reverse">
-                <Button variant="outline" size="sm" class="cursor-pointer text-white border-neutral-200 dark:border-neutral-750 bg-primary-700 hover:bg-primary-500"
+                <Button
+variant="outline" size="sm" class="cursor-pointer text-white border-neutral-200 dark:border-neutral-750 bg-primary-700 hover:bg-primary-500"
                         @click="() => navigateTo('/categories')"
                 >
                   Gérer les catégories
@@ -34,7 +35,8 @@
             <div>
               <ItemActions class="flex-row-reverse">
                 <!-- Correcter l'événement émis -->
-                <Button variant="outline" size="sm" class="cursor-pointer text-white border-neutral-200 dark:border-neutral-750 bg-primary-700 hover:bg-primary-500"
+                <Button
+variant="outline" size="sm" class="cursor-pointer text-white border-neutral-200 dark:border-neutral-750 bg-primary-700 hover:bg-primary-500"
                         @click="openCsvImportModal"
                 >
                   Paramètres d'importation

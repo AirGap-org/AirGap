@@ -81,7 +81,7 @@
               class="w-full cursor-pointer mt-2"
               @click="navigateTo('/auth/google', { external: true })"
           >
-            <img src="https://www.google.com/favicon.ico" class="w-4 h-4 mr-2" alt="Google"/>
+            <img src="https://www.google.com/favicon.ico" class="w-4 h-4 mr-2" alt="Google">
             S'enregistrer avec Google
           </Button>
 
@@ -92,7 +92,7 @@
               class="w-full cursor-pointer mt-2"
               @click="navigateTo('/auth/github', { external: true })"
           >
-            <img src="https://github.com/favicon.ico" class="w-4 h-4 mr-2" alt="GitHub" />
+            <img src="https://github.com/favicon.ico" class="w-4 h-4 mr-2" alt="GitHub" >
             S'enregistrer avec GitHub
           </Button>
 

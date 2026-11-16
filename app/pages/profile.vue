@@ -31,11 +31,13 @@
 
           </CardContent>
           <CardFooter>
-            <Button type="button"
+            <Button
+type="button"
                     class="cursor-pointer border hover:text-neutral-600 text-neutral-700 dark:text-neutral-300 mr-2"
                     @click="resetProfileForm">Annuler
             </Button>
-            <Button type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
+            <Button
+type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
                     :disabled="!isProfileValid || isLoading">
               <span v-if="isLoading">Chargement...</span>
               <span v-else>Enregistrer</span>
@@ -66,11 +68,13 @@
               </Field>
             </CardContent>
             <CardFooter>
-              <Button type="button"
+              <Button
+type="button"
                       class="cursor-pointer border hover:text-neutral-600 text-neutral-700 dark:text-neutral-300 mr-2"
                       @click="resetEmailForm">Annuler
               </Button>
-              <Button type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
+              <Button
+type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
                       :disabled="!isEmailValid || isLoading">
                 <span v-if="isLoading">Chargement...</span>
                 <span v-else>Enregistrer</span>
@@ -123,11 +127,13 @@
               </Field>
             </CardContent>
             <CardFooter>
-              <Button type="button"
+              <Button
+type="button"
                       class="cursor-pointer border hover:text-neutral-600 text-neutral-700 dark:text-neutral-300 mr-2"
                       @click="resetPasswordForm">Annuler
               </Button>
-              <Button type="submit" class="cursor-pointer border rounded hover:text-primary-600 text-primary-550"
+              <Button
+type="submit" class="cursor-pointer border rounded hover:text-primary-600 text-primary-550"
                       :disabled="!isPasswordValid || isLoading">
                 <span v-if="isLoading">Chargement...</span>
                 <span v-else>Enregistrer</span>
@@ -159,14 +165,15 @@
           <div class="flex flex-col gap-2">
             <p class="text-sm font-medium text-red-600 dark:text-red-400">Zone dangereuse</p>
             <AlertDialog v-model:open="isDeleteDialogOpen">
-              <AlertDialogTrigger asChild>
+              <AlertDialogTrigger as-child>
                 <Button class="w-full cursor-pointer bg-red-600 hover:bg-red-700 text-white border border-red-700" variant="destructive">
                   Supprimer mon compte
                 </Button>
               </AlertDialogTrigger>
 
             <!-- Compte local : demande le mot de passe -->
-            <AlertDialogContent v-if="authProvider === 'local'"
+            <AlertDialogContent
+v-if="authProvider === 'local'"
                                 class="bg-white dark:bg-neutral-900/60 backdrop-blur-sm">
               <AlertDialogHeader>
                 <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
@@ -184,7 +191,8 @@
               </div>
 
               <AlertDialogFooter>
-                <AlertDialogCancel class="border cursor-pointer hover:text-neutral-600"
+                <AlertDialogCancel
+class="border cursor-pointer hover:text-neutral-600"
                                    @click="passwordForDeletion = ''">
                   Annuler
                 </AlertDialogCancel>
