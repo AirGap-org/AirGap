@@ -1,4 +1,4 @@
-import { useStorage, useRuntimeConfig } from '#imports'
+import { useRuntimeConfig } from '#imports'
 
 /**
  * Rate-limiting / lockout basé sur le storage Nitro.

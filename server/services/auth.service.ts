@@ -1,12 +1,12 @@
 import { createUser, getUserByEmail } from '#server/services/user.service'
-import { hashPassword, verifyPassword } from '#imports'
-import { users } from '~~/drizzle/schema'
+import { hashUserPassword, verifyUserPassword } from '#server/utils/hashing'
+import type { users } from '~~/drizzle/schema'
 
 let dummyHash: string | null = null
 
 const getDummyHash = async () => {
     if (!dummyHash) {
-        dummyHash = await hashPassword('dummy-password-for-timing-safety')
+        dummyHash = await hashUserPassword('dummy-password-for-timing-safety')
     }
     return dummyHash
 }
@@ -23,7 +23,7 @@ export const registerUser = async (data: typeof users.$inferInsert) => {
         throw createError({ statusCode: 400, message: 'Mot de passe requis' })
     }
 
-    const hashedPassword = await hashPassword(data.password)
+    const hashedPassword = await hashUserPassword(data.password)
 
     return await createUser({
         ...data,
@@ -38,7 +38,7 @@ export const registerUser = async (data: typeof users.$inferInsert) => {
 export const loginUser = async (email: string, passwordPlain: string) => {
     const user = await getUserByEmail(email)
 
-    const isMatch = await verifyPassword(user?.password ?? await getDummyHash(), passwordPlain)
+    const isMatch = await verifyUserPassword(user?.password ?? await getDummyHash(), passwordPlain)
 
     if (!user || !isMatch) return null
 

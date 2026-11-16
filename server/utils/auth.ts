@@ -71,7 +71,7 @@ export const requirePendingTwoFactor = async (event: H3Event) => {
         throw createError({ statusCode: 403, message: 'Non autorisé' })
     }
 
-    return session
+    return { ...session, user: session.user }
 }
 
 /** Crée une session complète ou une session limitée si la 2FA est activée. */

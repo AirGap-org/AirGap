@@ -133,7 +133,7 @@ async function startSetup() {
   loading.value = true
 
   await $fetch('/api/auth/2fa/setup', { method: 'POST' })
-      .then((res: any) => {
+      .then((res: { qrCode: string; secret: string }) => {
         qrCode.value = res.qrCode
         secret.value = res.secret
         step.value = 'setup'

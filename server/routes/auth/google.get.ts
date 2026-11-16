@@ -1,7 +1,7 @@
 import { db } from "#server/db";
 import { users } from "~~/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { establishOAuthSession } from "#server/utils/oauth";
+import { establishOAuthSession, redirectOAuth } from "#server/utils/oauth";
 
 export default defineOAuthGoogleEventHandler({
     async onSuccess(event, { user }) {
@@ -11,7 +11,7 @@ export default defineOAuthGoogleEventHandler({
         });
 
         if (dbUser && dbUser.authProvider !== 'google') {
-            return sendRedirect(event, `/login?error=wrong_provider`);
+            return redirectOAuth(event, `/login?error=wrong_provider`);
         }
 
         if (!dbUser) {
@@ -22,7 +22,7 @@ export default defineOAuthGoogleEventHandler({
             }).returning();
 
             if (!newUser) {
-                return sendRedirect(event, '/login?error=oauth');
+                return redirectOAuth(event, '/login?error=oauth');
             }
 
             dbUser = newUser;
@@ -39,6 +39,6 @@ export default defineOAuthGoogleEventHandler({
 
     async onError(event, error) {
         console.error('Google OAuth error:', error);
-        return sendRedirect(event, '/login?error=oauth');
+        return redirectOAuth(event, '/login?error=oauth');
     }
 });

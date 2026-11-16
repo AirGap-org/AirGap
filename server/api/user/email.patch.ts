@@ -1,7 +1,7 @@
 import {z} from 'zod'
 import {getUserByEmail, updateUserEmail} from '#server/services/user.service'
 import {requireAuth} from '#server/utils/auth'
-import {verifyPassword} from '#imports'
+import {verifyUserPassword} from '#server/utils/hashing'
 
 const emailSchema = z.object({
     email: z.email('Email invalide'),
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
     if (!userInDb || !userInDb.password) {
         throw createError({statusCode: 400, message: 'Aucun mot de passe configuré pour ce compte'})
     }
-    if (!await verifyPassword(userInDb.password, result.data.currentPassword)) {
+    if (!await verifyUserPassword(userInDb.password, result.data.currentPassword)) {
         throw createError({statusCode: 403, message: 'Mot de passe actuel incorrect'})
     }
 

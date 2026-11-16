@@ -3,9 +3,11 @@ import { cn } from "~/lib/utils";
 import { Label } from '@/components/ui/label';
 
 const props = defineProps({
-  class: { type: [Boolean, null, String, Object, Array] },
-  required: false,
-  skipCheck: true,
+  class: {
+    type: [Boolean, null, String, Object, Array],
+    required: false,
+    skipCheck: true,
+  },
   for: { type: String },
   text: { type: String }
 });

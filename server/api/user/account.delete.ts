@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { getUserByEmail, softDeleteUser } from '#server/services/user.service'
 import { requireAuth } from '#server/utils/auth'
+import { verifyUserPassword } from '#server/utils/hashing'
 
 const deleteSchema = z.object({
     password: z.string().optional()
@@ -24,7 +25,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'Aucun mot de passe configuré' })
         }
 
-        if (!await verifyPassword(userInDb.password, result.data.password)) {
+        if (!await verifyUserPassword(userInDb.password, result.data.password)) {
             throw createError({ statusCode: 403, message: 'Mot de passe incorrect' })
         }
     }

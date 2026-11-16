@@ -1,5 +1,6 @@
 import {z} from 'zod'
 import {deleteBudget} from "#server/services/budgets.service";
+import {getErrorStatusCode} from "#server/utils/errors";
 
 // Validation de l'ID URL
 const paramsSchema = z.object({
@@ -37,9 +38,9 @@ export default defineEventHandler(async (event) => {
             message: 'Budget supprimé avec succès',
             id: deletedBudget.id
         }
-    } catch (error: any) {
+    } catch (error) {
         // Si c'est notre erreur 404, on la laisse passer
-        if (error.statusCode === 404) throw error
+        if (getErrorStatusCode(error) === 404) throw error
 
         console.error('Erreur suppression budget:', error)
         throw createError({

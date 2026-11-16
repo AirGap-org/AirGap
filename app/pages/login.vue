@@ -119,8 +119,8 @@ async function handleLogin() {
       password: credentials.value.password,
     }
   })
-      .then(async (res: any) => {
-        if (res.requiresTwoFactor) {
+      .then(async (res) => {
+        if ('requiresTwoFactor' in res && res.requiresTwoFactor) {
           await navigateTo('/auth/2fa')
           return
         }

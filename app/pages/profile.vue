@@ -238,6 +238,14 @@ import {Alert} from "~/components/ui/alert";
 import {AlertDialog, AlertDialogFooter, AlertDialogHeader} from "~/components/ui/alert-dialog";
 import TwoFactorSettings from "~/components/TwoFactorSettings.vue";
 
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (typeof err === 'object' && err !== null && 'data' in err) {
+    const data = (err as { data?: { message?: string } }).data
+    if (data?.message) return data.message
+  }
+  return fallback
+}
+
 useHead({
   title: 'AirGap | Profil',
 })
@@ -343,8 +351,8 @@ async function updateProfile() {
     await refreshSession()
 
     success.value = 'Profil mis à jour avec succès !'
-  } catch (err: any) {
-    error.value = err.data?.message || 'Erreur lors de la mise à jour.'
+  } catch (err) {
+    error.value = getErrorMessage(err, 'Erreur lors de la mise à jour.')
   } finally {
     isLoading.value = false
   }
@@ -364,8 +372,8 @@ async function updateEmail() {
     await refreshSession()
 
     success.value = 'Email mis a jour avec succes !'
-  } catch (err: any) {
-    error.value = err.data?.message || "Erreur lors de la mise a jour de l'email."
+  } catch (err) {
+    error.value = getErrorMessage(err, "Erreur lors de la mise a jour de l'email.")
   } finally {
     isLoading.value = false
   }
@@ -413,8 +421,8 @@ async function confirmDeleteAccount() {
     isDeleteDialogOpen.value = false
     await clear()
     await navigateTo('/login')
-  } catch (err: any) {
-    alert(err.data?.message || 'Erreur lors de la suppression')
+  } catch (err) {
+    alert(getErrorMessage(err, 'Erreur lors de la suppression'))
     passwordForDeletion.value = ''
   } finally {
     isLoading.value = false

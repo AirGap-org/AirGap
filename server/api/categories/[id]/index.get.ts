@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {getCategoryById} from "#server/services/categories.service";
+import {getErrorStatusCode} from "#server/utils/errors";
 
 const paramsSchema = z.object({
     id: z.string().uuid({message: "ID de catégorie invalide"})
@@ -21,8 +22,8 @@ export default defineEventHandler(async (event) => {
         }
 
         return {success: true, category};
-    } catch (error: any) {
-        if (error.statusCode) throw error;
+    } catch (error) {
+        if (getErrorStatusCode(error)) throw error;
         throw createError({statusCode: 500, message: 'Erreur serveur'});
     }
 });

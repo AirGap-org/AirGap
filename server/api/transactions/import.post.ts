@@ -1,6 +1,7 @@
 import {z} from 'zod';
 import {importTransactionsBulk} from "#server/services/transactions.service";
 import {assertCategoriesOwnership} from "#server/utils/categories";
+import {getErrorMessage} from "#server/utils/errors";
 
 const importSchema = z.object({
     transactions: z.array(z.object({
@@ -36,11 +37,11 @@ export default defineEventHandler(async (event) => {
 
         const count = await importTransactionsBulk(user.id, body.data.transactions);
         return {success: true, count};
-    } catch (error: any) {
+    } catch (error) {
         console.error("Erreur SQL Import:", error);
         throw createError({
             statusCode: 500,
-            message: error.message || "Erreur serveur lors de l'importation."
+            message: getErrorMessage(error, "Erreur serveur lors de l'importation.")
         });
     }
 });

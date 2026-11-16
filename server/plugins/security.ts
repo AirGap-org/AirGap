@@ -4,7 +4,7 @@ import { useRuntimeConfig } from '#imports'
  * Validation des secrets et de la configuration critique au démarrage du serveur.
  *
  * - Refuse de démarrer si un secret est manquant ou trop faible, évitant qu'un
- *   déploiement oublie de surcharger les valeurs par défaut (ex. NUXT_SESSION_PASSWORD
+ *   déploiement oublie de surcharger les valeurs par défaut (ex. NUXT_APP_SECRET
  *   composé de zéros dans .env.example).
  * - Avertit en production si TRUST_PROXY_HEADERS n'est pas explicitement défini,
  *   car dans ce cas getClientIP() renvoie l'IP socket — derrière un reverse proxy
@@ -18,19 +18,19 @@ export default defineNitroPlugin(() => {
     const config = useRuntimeConfig()
 
     // --- Secret de session ---
-    const sessionPassword = config.session?.password as string | undefined
+    const appSecret = config.appSecret as string | undefined
 
-    if (!sessionPassword || sessionPassword.length < 32) {
+    if (!appSecret || appSecret.length < 32) {
         throw new Error(
-            '🚨 ERREUR CRITIQUE : NUXT_SESSION_PASSWORD doit faire au moins 32 caractères. ' +
+            '🚨 ERREUR CRITIQUE : NUXT_APP_SECRET doit faire au moins 32 caractères. ' +
             'Générez une valeur aléatoire forte (ex. `openssl rand -base64 32`).'
         )
     }
 
     // Valeur par défaut documentée dans .env.example : refus explicite.
-    if (/^0+$/.test(sessionPassword)) {
+    if (/^0+$/.test(appSecret)) {
         throw new Error(
-            '🚨 ERREUR CRITIQUE : NUXT_SESSION_PASSWORD contient la valeur par défaut. ' +
+            '🚨 ERREUR CRITIQUE : NUXT_APP_SECRET contient la valeur par défaut. ' +
             'Générez une valeur aléatoire forte avant de déployer.'
         )
     }

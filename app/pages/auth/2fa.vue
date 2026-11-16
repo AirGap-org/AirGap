@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import TwoFactorVerify from '~/components/2fa.vue'
+import TwoFactorVerify from '~/components/TwoFactorVerify.vue'
 </script>
 
 <template>

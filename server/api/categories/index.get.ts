@@ -4,7 +4,9 @@ export default defineEventHandler(async (event) => {
     const user = await requireAuth(event);
     const query = getQuery(event);
     const typeValue = Array.isArray(query.type) ? query.type[0] : query.type;
-    const typeEnum = typeof typeValue === 'string' ? typeValue : undefined;
+    const typeEnum = typeValue === 'depense' || typeValue === 'revenu' || typeValue === 'non_categorise'
+        ? typeValue
+        : undefined;
 
     try {
         const data = await getAllCategories(user.id, typeEnum);
