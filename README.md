@@ -127,6 +127,19 @@ npx drizzle-kit migrate
 npx drizzle-kit studio
 ```
 
+### Tests
+
+⚠️ Les tests d'intégration vident la base ciblée (`TRUNCATE`). Ils refusent de s'exécuter si le nom de la base ne finit pas par `_test`, `_preview` ou `_ci`.
+
+```bash
+# Créer une base dédiée
+createdb -h localhost -U <user> airgap_test
+
+# Appliquer les migrations puis lancer les tests
+NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" npx drizzle-kit migrate
+NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" npm test
+```
+
 ## 🎯 Utilisation
 
 ### Première Connexion

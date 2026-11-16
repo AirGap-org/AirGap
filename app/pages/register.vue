@@ -129,6 +129,8 @@ const form = reactive({
 
 const errorMessage = ref("");
 const route = useRoute();
+const router = useRouter();
+const { fetch: refreshSession } = useUserSession();
 
 if(route.query.error === 'wrong_provider') {
   errorMessage.value = 'Votre email est déjà utilisé pour un autre compte';
@@ -150,8 +152,8 @@ async function handleRegister() {
       },
     })
 
-    await useUserSession().fetch()
-    await navigateTo('/')
+    await refreshSession()
+    await router.push('/')
   } catch (error) {
     errorMessage.value = error.data?.message || "Une erreur est survenue lors de l'inscription";
     console.error("Détails de l'erreur:", error.data);

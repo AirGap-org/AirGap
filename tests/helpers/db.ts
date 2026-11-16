@@ -24,7 +24,28 @@ const TABLES = [
     'users'
 ]
 
+const getDatabaseName = (): string => {
+    try {
+        return new URL(process.env.NUXT_DATABASE_URL || '').pathname.replace(/^\//, '')
+    } catch {
+        return ''
+    }
+}
+
+export const assertSafeTestDatabase = (): void => {
+    const databaseName = getDatabaseName()
+    const isDedicatedTestDatabase = /(^|_)(test|preview|ci)$/.test(databaseName)
+
+    if (!process.env.VITEST || !isDedicatedTestDatabase) {
+        throw new Error(
+            `Refus de vider la base "${databaseName || 'inconnue'}". ` +
+            'Les tests doivent cibler une base dédiée dont le nom finit par _test, _preview ou _ci.'
+        )
+    }
+}
+
 export const resetDb = async (): Promise<void> => {
+    assertSafeTestDatabase()
     await db.execute(sql.raw(`TRUNCATE TABLE ${TABLES.map(t => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE`))
 }
 
