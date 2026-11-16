@@ -2,13 +2,16 @@ import { z } from 'zod'
 import { getUserByEmail, softDeleteUser } from '#server/services/user.service'
 import { requireAuth } from '#server/utils/auth'
 import { verifyUserPassword } from '#server/utils/hashing'
+import { enforceRateLimit } from '#server/utils/rateLimit'
 
 const deleteSchema = z.object({
-    password: z.string().optional()
+    password: z.string().max(1024).optional()
 })
 
 export default defineEventHandler(async (event) => {
     const user = await requireAuth(event)
+
+    await enforceRateLimit('account-delete', user.id, 5)
 
     const result = await readValidatedBody(event, body => deleteSchema.safeParse(body))
     if (!result.success) throw createError({ statusCode: 400, message: 'Données invalides' })

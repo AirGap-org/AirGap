@@ -1,4 +1,4 @@
-import {uuid, pgTable, primaryKey} from "drizzle-orm/pg-core";
+import {uuid, pgTable, primaryKey, index} from "drizzle-orm/pg-core";
 import {relations} from "drizzle-orm";
 import {categories} from "./categories";
 import {transactions} from "./transactions";
@@ -10,6 +10,7 @@ export const assoTransactionsCategories = pgTable('assoTransactionsCategories', 
 }, (table) => {
     return [
         primaryKey({columns: [table.transactionId, table.categoryId]}),
+        index('asso_transactions_category_idx').on(table.categoryId),
     ];
 });
 

@@ -15,6 +15,9 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:check-emails": "tsx scripts/check-email-duplicates.ts",
     "db:reencrypt": "tsx scripts/reencrypt.ts",
     "postinstall": "nuxt prepare"
   },

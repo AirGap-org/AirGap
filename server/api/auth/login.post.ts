@@ -5,8 +5,8 @@ import {getClientIP} from '#server/utils/clientIP';
 import { establishUserSession } from '#server/utils/auth';
 
 const loginSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(1)
+    email: z.string().trim().toLowerCase().email().max(255),
+    password: z.string().min(1).max(1024)
 })
 
 export default defineEventHandler(async (event) => {
@@ -54,7 +54,8 @@ export default defineEventHandler(async (event) => {
         email: user.email,
         name: user.name,
         authProvider: user.authProvider ?? 'local',
-        twoFactorEnabled: user.twoFactorEnabled
+        twoFactorEnabled: user.twoFactorEnabled,
+        sessionVersion: user.sessionVersion
     })
 
     return user.twoFactorEnabled ? { requiresTwoFactor: true } : { success: true }

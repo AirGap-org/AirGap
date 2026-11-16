@@ -5,9 +5,15 @@ import { establishOAuthSession, redirectOAuth } from "#server/utils/oauth";
 
 export default defineOAuthGoogleEventHandler({
     async onSuccess(event, { user }) {
+        const email = String(user.email || '').trim().toLowerCase()
+        const emailVerified = (user as { email_verified?: boolean }).email_verified
+
+        if (!email || emailVerified === false) {
+            return redirectOAuth(event, '/login?error=oauth')
+        }
 
         let dbUser = await db.query.users.findFirst({
-            where: eq(users.email, user.email)
+            where: eq(users.email, email)
         });
 
         if (dbUser && dbUser.authProvider !== 'google') {
@@ -16,7 +22,7 @@ export default defineOAuthGoogleEventHandler({
 
         if (!dbUser) {
             const [newUser] = await db.insert(users).values({
-                email: user.email ?? '',
+                email,
                 name: user.name ?? '',
                 authProvider: 'google',
             }).returning();
@@ -33,7 +39,8 @@ export default defineOAuthGoogleEventHandler({
             email: dbUser.email,
             name: dbUser.name,
             authProvider: dbUser.authProvider || 'google',
-            twoFactorEnabled: dbUser.twoFactorEnabled ?? false
+            twoFactorEnabled: dbUser.twoFactorEnabled ?? false,
+            sessionVersion: dbUser.sessionVersion
         })
     },
 
