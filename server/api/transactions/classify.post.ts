@@ -90,7 +90,13 @@ const resolvePredictedCategoryId = async (userId: string, categoryName: string, 
     return null;
 };
 
-const predictCategoryForTransaction = async (transaction: any, userId: string) => {
+type TransactionToClassify = {
+    description?: string
+    amount?: number | string
+    typeTransaction?: 'depense' | 'revenu' | 'non_categorise'
+}
+
+const predictCategoryForTransaction = async (transaction: TransactionToClassify, userId: string) => {
     const description = String(transaction.description || '').trim();
     const amount = Number(transaction.amount ?? 0);
     const typeTransaction = transaction.typeTransaction || (amount >= 0 ? 'revenu' : 'depense');

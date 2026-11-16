@@ -17,7 +17,7 @@ const props = defineProps({
 const { id, config } = useChart();
 
 const payload = computed(() =>
-  Object.entries(config.value).map(([key, value]) => {
+  Object.entries(config.value).map(([key]) => {
     return {
       key: props.nameKey || key,
       itemConfig: config.value[key],

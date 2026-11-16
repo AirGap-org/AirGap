@@ -1,5 +1,6 @@
 import {and, desc, eq} from 'drizzle-orm'
 import {assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
+import type {TransactionType} from "~~/drizzle/schema";
 import {db} from "#server/db";
 
 /**
@@ -7,6 +8,17 @@ import {db} from "#server/db";
  */
 type TransactionInsert = typeof transactions.$inferInsert;
 type AssociationInsert = typeof assoTransactionsCategories.$inferInsert;
+type DbTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+type ImportedTransaction = {
+    date: Date | string;
+    description?: string | null;
+    amount: string | number;
+    selectedCategoryId?: string | null;
+    categoryName?: string | null;
+    typeTransaction?: TransactionType;
+    userId?: string | null;
+};
 
 const getTransactionSignature = (date: Date, amount: number, description: string) => {
     const dateStr = new Date(date).toISOString().split('T')[0];
@@ -14,9 +26,9 @@ const getTransactionSignature = (date: Date, amount: number, description: string
 };
 
 const resolveCategory = async (
-    tx: any,
-    t: any,
-    typeValue: "depense" | "revenu" | "non_categorise",
+    tx: DbTransaction,
+    t: ImportedTransaction,
+    typeValue: TransactionType,
     categoryMap: Map<string, string>
 ): Promise<string | null> => {
     if (t.selectedCategoryId && categoryMap.has(String(t.selectedCategoryId))) {
@@ -33,6 +45,10 @@ const resolveCategory = async (
             userId: t.userId ?? null,
             isDefault: false
         }).returning({id: categories.id});
+
+        if (!newCat) {
+            throw createError('Category cannot be created');
+        }
 
         categoryMap.set(key, newCat.id);
         return newCat.id;
@@ -160,7 +176,7 @@ export const createTransaction = async (data: TransactionInsert, categoryId?: st
     });
 }
 
-export const importTransactionsBulk = async (userId: string, rawTransactions: Record<string, any>[]) => {
+export const importTransactionsBulk = async (userId: string, rawTransactions: ImportedTransaction[]) => {
     return await db.transaction(async (tx) => {
         const now = new Date();
 
@@ -176,7 +192,6 @@ export const importTransactionsBulk = async (userId: string, rawTransactions: Re
         ));
 
         let importedCount = 0;
-        let skippedCount = 0;
 
         const transactionsToInsert: TransactionInsert[] = [];
         const associatedCategories: (string | null)[] = [];
@@ -187,11 +202,10 @@ export const importTransactionsBulk = async (userId: string, rawTransactions: Re
             const cleanDesc = t.description?.trim() || 'Import CSV';
 
             if (signatures.has(getTransactionSignature(dateObj, amount, cleanDesc.toLowerCase()))) {
-                skippedCount++;
                 continue;
             }
 
-            const typeValue = t.typeTransaction || (Number(t.amount) >= 0 ? 'revenu' : 'depense');
+            const typeValue: TransactionType = t.typeTransaction ?? (Number(t.amount) >= 0 ? 'revenu' : 'depense');
             const matchedId = await resolveCategory(tx, t, typeValue, categoryMap);
 
             transactionsToInsert.push({

@@ -5,3 +5,5 @@ export const typeTransactionEnum = pgEnum("typeTransactionEnum", [
     "revenu",
     "non_categorise",
 ]);
+
+export type TransactionType = (typeof typeTransactionEnum.enumValues)[number];

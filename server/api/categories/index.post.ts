@@ -1,5 +1,6 @@
 import {z} from 'zod';
 import {createCategory} from "#server/services/categories.service";
+import {getErrorCode} from "#server/utils/errors";
 
 const createCategorySchema = z.object({
     name: z.string({message: "Le nom est requis"})
@@ -32,11 +33,11 @@ export default defineEventHandler(async (event) => {
             category: newCategory
         };
 
-    } catch (error: any) {
-        if (error.code === '23505') {
+    } catch (error) {
+        if (getErrorCode(error) === '23505') {
             throw createError({statusCode: 409, message: `La catégorie "${body.data.name}" existe déjà.`});
         }
-        if (error.code === '23503') {
+        if (getErrorCode(error) === '23503') {
             throw createError({statusCode: 400, message: "Type de catégorie invalide."});
         }
 

@@ -20,7 +20,17 @@ export const getUserBudgets = async (userId: string) => {
         .where(eq(budgets.userId, userId))
         .orderBy(desc(budgets.startDate));
 
-    const budgetsMap = new Map();
+    type BudgetWithCategories = {
+        id: string;
+        name: string;
+        amount: string;
+        startDate: Date;
+        endDate: Date;
+        accountId: string | null;
+        categories: { id: string; name: string }[];
+    };
+
+    const budgetsMap = new Map<string, BudgetWithCategories>();
 
     for (const row of rows) {
         if (!budgetsMap.has(row.id)) {
@@ -37,10 +47,10 @@ export const getUserBudgets = async (userId: string) => {
 
         if (row.categoryId) {
             const budget = budgetsMap.get(row.id);
-            if (!budget.categories.some((c: any) => c.id === row.categoryId)) {
+            if (budget && !budget.categories.some((c) => c.id === row.categoryId)) {
                 budget.categories.push({
                     id: row.categoryId,
-                    name: row.categoryName,
+                    name: row.categoryName ?? '',
                 });
             }
         }
@@ -88,7 +98,7 @@ export const updateBudget = async (
     newCategoryIds?: string[]
 ) => {
     return await db.transaction(async (tx) => {
-        let updatedBudget = null;
+        let updatedBudget: typeof budgets.$inferSelect | undefined;
 
         if (Object.keys(updateData).length > 0) {
             const result = await tx.update(budgets)

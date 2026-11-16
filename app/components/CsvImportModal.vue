@@ -53,7 +53,7 @@
 
 <script setup>
 // --- PROPS ---
-const props = defineProps({
+defineProps({
   isOpen: {
     type: Boolean,
     default: false
