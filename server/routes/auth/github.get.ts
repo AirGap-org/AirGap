@@ -1,7 +1,7 @@
 import {db} from "#server/db";
 import {eq} from "drizzle-orm";
 import {users} from "~~/drizzle/schema";
-import { establishOAuthSession } from "#server/utils/oauth";
+import { establishOAuthSession, redirectOAuth } from "#server/utils/oauth";
 
 export default defineOAuthGitHubEventHandler({
     config: {
@@ -26,12 +26,12 @@ export default defineOAuthGitHubEventHandler({
                 userEmail = res?.find((e) => e.primary)?.email || res?.[0]?.email || null;
             } catch (e) {
                 console.error('Failed to fetch GitHub email:', e);
-                return sendRedirect(event, '/login?error=oauth');
+                return redirectOAuth(event, '/login?error=oauth');
             }
         }
 
         if (!userEmail) {
-            return sendRedirect(event, '/login?error=oauth');
+            return redirectOAuth(event, '/login?error=oauth');
         }
 
         let dbUser = await db.query.users.findFirst({
@@ -39,7 +39,7 @@ export default defineOAuthGitHubEventHandler({
         });
 
         if (dbUser && dbUser.authProvider !== 'github') {
-            return sendRedirect(event, `/login?error=wrong_provider`);
+            return redirectOAuth(event, `/login?error=wrong_provider`);
         }
 
         if (!dbUser) {
@@ -50,7 +50,7 @@ export default defineOAuthGitHubEventHandler({
             }).returning();
 
             if (!newUser) {
-                return sendRedirect(event, '/login?error=oauth');
+                return redirectOAuth(event, '/login?error=oauth');
             }
 
             dbUser = newUser;
@@ -67,6 +67,6 @@ export default defineOAuthGitHubEventHandler({
 
     async onError(event, error) {
         console.error('GitHub OAuth error:', error);
-        return sendRedirect(event, '/login?error=oauth');
+        return redirectOAuth(event, '/login?error=oauth');
     }
 });

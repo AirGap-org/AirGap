@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     },
 
     runtimeConfig: {
+        appSecret: process.env.NUXT_APP_SECRET || '',
         databaseUrl: '',
         // N'activer QUE derrière un reverse proxy de confiance (nginx/Traefik)
         // qui strip le X-Forwarded-For entrant. Sinon l'IP client reste lue
@@ -20,7 +21,6 @@ export default defineNuxtConfig({
             lockoutMinutes: Number(process.env.RATE_LIMIT_LOCKOUT_MINUTES) || 15,
         },
         session: {
-            password: process.env.NUXT_SESSION_PASSWORD,
             maxAge: 60 * 60 * 24 * 30,
         },
         ai: {
@@ -87,7 +87,7 @@ export default defineNuxtConfig({
                 "background_color": "#0f172b",
                 "theme_color": "#16a34a"
          },
-         workbox: {
+         generateSW: {
             navigateFallback: '/',
          },
          devOptions: {

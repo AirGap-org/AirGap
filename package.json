@@ -3,6 +3,9 @@
   "private": true,
   "type": "module",
   "version": "1.0",
+  "engines": {
+    "node": ">=22.22.3"
+  },
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
@@ -13,46 +16,39 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@esbuild-kit/core-utils": "^3.3.2",
-    "@headlessui/vue": "^1.7.23",
-    "@heroicons/vue": "^2.2.0",
-    "@internationalized/date": "^3.12.0",
-    "@libsql/client": "^0.17.2",
     "@nuxt/ui": "^4.6.0",
     "@oslojs/encoding": "^1.1.0",
     "@oslojs/otp": "^1.1.0",
-    "@types/papaparse": "^5.5.2",
     "@unovis/ts": "^1.6.4",
     "@unovis/vue": "^1.6.4",
-    "@vite-pwa/nuxt": "^1.1.1",
-    "@vueuse/core": "^14.2.1",
+    "@vite-pwa/nuxt": "^2.0.1",
+    "@vueuse/core": "^15.0.0",
     "bcrypt": "^6.0.0",
-    "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
-    "jsonwebtoken": "^9.0.2",
-    "koa": ">=3.1.2",
     "lucide-vue-next": "^1.0.0",
-    "otplib": "^13.4.0",
     "papaparse": "^5.5.3",
     "pg": "^8.20.0",
     "postcss": "^8.5.9",
-    "postgres": "^3.4.9",
     "qrcode": "^1.5.4",
-    "radix-vue": "^1.9.17",
     "reka-ui": "^2.9.5",
     "tailwind-merge": "^3.5.0",
-    "unstorage": "^1.17.5",
     "vue": "^3.5.31",
     "vue-router": "^5.0.4",
     "zod": "^4.3.6"
+  },
+  "overrides": {
+    "@esbuild-kit/core-utils": {
+      "esbuild": "^0.25.0"
+    }
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@nuxt/eslint": "^1.4.1",
     "@types/bcrypt": "^6.0.0",
+    "@types/papaparse": "^5.5.2",
     "@types/pg": "^8.20.0",
     "@types/qrcode": "^1.5.6",
     "drizzle-kit": "^0.31.10",
@@ -60,9 +56,11 @@
     "eslint-plugin-vue": "^10.8.0",
     "globals": "^17.4.0",
     "nuxt": "^4.3.1",
-    "nuxt-auth-utils": "^0.5.29",
+    "nuxt-auth-utils": "^0.6.2",
     "shadcn-nuxt": "^2.5.3",
     "tailwindcss": "^4.2.2",
-    "typescript-eslint": "^8.58.1"
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.58.1",
+    "vue-tsc": "^3.3.14"
   }
 }
