@@ -140,6 +140,12 @@ NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" np
 NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" npm test
 ```
 
+La suite inclut des tests E2E HTTP (inscription, login, CRUD transactions/budgets/catégories, import, sécurité) exécutés avec `AI_ENABLED=false`. Pour ne lancer que les E2E :
+
+```bash
+NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" npm run test:e2e
+```
+
 ## 🎯 Utilisation
 
 ### Première Connexion

@@ -44,9 +44,32 @@ export const assertSafeTestDatabase = (): void => {
     }
 }
 
+const DEFAULT_CATEGORIES: Array<{
+    name: string
+    typeTransaction: 'depense' | 'revenu' | 'non_categorise'
+}> = [
+    { name: 'Salaire & Pro', typeTransaction: 'revenu' },
+    { name: 'Aides & Pensions', typeTransaction: 'revenu' },
+    { name: 'Alimentation & Quotidien', typeTransaction: 'depense' },
+    { name: 'Logement & Factures', typeTransaction: 'depense' },
+    { name: 'Loisirs & Achats', typeTransaction: 'depense' },
+    { name: 'Transports', typeTransaction: 'depense' },
+    { name: 'Virements', typeTransaction: 'non_categorise' },
+    { name: 'Non catégorisé', typeTransaction: 'non_categorise' }
+]
+
+export const seedDefaultCategories = async (): Promise<void> => {
+    await db.insert(categories).values(DEFAULT_CATEGORIES.map(category => ({
+        ...category,
+        userId: null,
+        isDefault: true
+    })))
+}
+
 export const resetDb = async (): Promise<void> => {
     assertSafeTestDatabase()
     await db.execute(sql.raw(`TRUNCATE TABLE ${TABLES.map(t => `"${t}"`).join(', ')} RESTART IDENTITY CASCADE`))
+    await seedDefaultCategories()
 }
 
 export const createUser = async (overrides: Partial<typeof users.$inferInsert> = {}) => {
