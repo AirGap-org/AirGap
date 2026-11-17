@@ -18,7 +18,7 @@
       <div v-if="step === 'setup'" class="space-y-4">
         <p class="text-sm text-gray-500">Scannez ce QR code avec votre application (Google Authenticator, Authy...)</p>
         <div class="flex justify-center">
-          <img :src="qrCode" alt="QR Code 2FA" class="w-48 h-48" />
+          <img :src="qrCode" alt="QR Code 2FA" class="w-48 h-48" >
         </div>
         <p class="text-sm text-center text-gray-500">
           Ou entrez ce code manuellement :

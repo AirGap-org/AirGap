@@ -14,15 +14,20 @@ describe('importTransactionsBulk', () => {
         const user = await createUser()
         const categoryName = `Catégorie import ${Date.now()}`
 
-        const count = await importTransactionsBulk(user.id, [{
+        const transaction = {
             date: new Date('2026-02-01T00:00:00Z'),
             description: 'Achat importé',
             amount: 42,
-            typeTransaction: 'depense',
+            typeTransaction: 'depense' as const,
             categoryName
-        }])
+        }
+
+        const count = await importTransactionsBulk(user.id, [transaction])
 
         expect(count).toBe(1)
+
+        // Un second import identique doit être ignoré grâce à la signature.
+        expect(await importTransactionsBulk(user.id, [transaction])).toBe(0)
 
         const created = await db.query.categories.findFirst({
             where: eq(categories.name, categoryName)

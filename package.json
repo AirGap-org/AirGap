@@ -15,9 +15,11 @@
     "typecheck": "nuxt typecheck",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vitest run tests/e2e",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:check-emails": "tsx scripts/check-email-duplicates.ts",
+    "db:backfill-signatures": "tsx scripts/backfill-signatures.ts",
     "db:reencrypt": "tsx scripts/reencrypt.ts",
     "postinstall": "nuxt prepare"
   },
@@ -53,6 +55,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@nuxt/eslint": "^1.4.1",
+    "@nuxt/test-utils": "^4.4.0",
     "@types/bcrypt": "^6.0.0",
     "@types/papaparse": "^5.5.2",
     "@types/pg": "^8.20.0",

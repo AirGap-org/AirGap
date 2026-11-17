@@ -2,6 +2,7 @@ import {and, desc, eq, isNull, or} from 'drizzle-orm'
 import {assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
 import type {TransactionType} from "~~/drizzle/schema";
 import {db} from "#server/db";
+import {transactionSignature} from "#server/utils/signature";
 
 /**
  * Types et utilitaires
@@ -18,11 +19,6 @@ type ImportedTransaction = {
     categoryName?: string | null;
     typeTransaction?: TransactionType;
     accountId?: string | null;
-};
-
-const getTransactionSignature = (date: Date, amount: number, description: string) => {
-    const dateStr = new Date(date).toISOString().split('T')[0];
-    return `${dateStr}_${amount}_${description.trim()}`;
 };
 
 const resolveCategory = async (
@@ -134,7 +130,7 @@ export const updateTransaction = async (
         if (!owned[0]) return undefined;
 
         const [updated] = await tx.update(transactions)
-            .set({...finalUpdateData, updatedAt: new Date()})
+            .set({...finalUpdateData, importSignature: null, updatedAt: new Date()})
             .where(and(
                 eq(transactions.id, transactionId),
                 eq(transactions.userId, userId)
@@ -207,10 +203,15 @@ export const importTransactionsBulk = async (userId: string, rawTransactions: Im
         }).from(categories).where(or(eq(categories.userId, userId), isNull(categories.userId))))
             .map(c => [c.name.toLowerCase().trim(), c.id]));
 
-        const existing = await tx.select().from(transactions).where(eq(transactions.userId, userId));
-        const signatures = new Set(existing.map(t =>
-            getTransactionSignature(new Date(t.date), Number(t.amount), decryptText(t.description || '').toLowerCase().trim())
-        ));
+        const existingSignatures = await tx.select({ signature: transactions.importSignature })
+            .from(transactions)
+            .where(eq(transactions.userId, userId));
+
+        const signatures = new Set(
+            existingSignatures
+                .map(row => row.signature)
+                .filter((signature): signature is string => Boolean(signature))
+        );
 
         let importedCount = 0;
 
@@ -222,9 +223,13 @@ export const importTransactionsBulk = async (userId: string, rawTransactions: Im
             const dateObj = new Date(t.date);
             const cleanDesc = t.description?.trim() || 'Import CSV';
 
-            if (signatures.has(getTransactionSignature(dateObj, amount, cleanDesc.toLowerCase()))) {
+            const signature = transactionSignature(dateObj, amount, cleanDesc)
+
+            if (signatures.has(signature)) {
                 continue;
             }
+
+            signatures.add(signature)
 
             const typeValue: TransactionType = t.typeTransaction ?? (Number(t.amount) >= 0 ? 'revenu' : 'depense');
             const matchedId = await resolveCategory(tx, t, typeValue, categoryMap, userId);
@@ -235,6 +240,7 @@ export const importTransactionsBulk = async (userId: string, rawTransactions: Im
                 description: encryptText(cleanDesc),
                 amount: String(amount),
                 date: dateObj,
+                importSignature: signature,
                 typeTransaction: typeValue as "depense" | "revenu" | "non_categorise",
                 devise: 'EUR',
                 recurrence: 'Aucune',

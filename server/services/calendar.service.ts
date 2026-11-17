@@ -1,4 +1,4 @@
-import {and, desc, eq, sql} from 'drizzle-orm'
+import {and, desc, eq, gte, lt, sql} from 'drizzle-orm'
 import {assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
 import {db} from "#server/db";
 
@@ -15,22 +15,21 @@ export const getUserTransactionsByYear = async (userId: string, year: number, mo
         endDate = new Date(year, startMonth + 3, 1);
     }
 
-    const pastTransactions = await db.select({
-        amount: transactions.amount,
-        typeEnum: transactions.typeTransaction
+    const [balanceRow] = await db.select({
+        balance: sql<string>`COALESCE(SUM(
+            CASE WHEN ${transactions.typeTransaction} = 'revenu'
+                THEN ${transactions.amount}::numeric
+                ELSE -${transactions.amount}::numeric
+            END
+        ), 0)`
     })
         .from(transactions)
         .where(and(
             eq(transactions.userId, userId),
-            sql`${transactions.date}
-            ::timestamp <
-            ${startDate}`
+            lt(transactions.date, startDate)
         ));
 
-    const initialBalance = pastTransactions.reduce((acc, t) => {
-        const val = Number(t.amount);
-        return t.typeEnum === 'revenu' ? acc + val : acc - val;
-    }, 0);
+    const initialBalance = Number(balanceRow?.balance ?? 0);
 
     const rows = await db.select({
         id: transactions.id,
@@ -46,12 +45,8 @@ export const getUserTransactionsByYear = async (userId: string, year: number, mo
         .leftJoin(categories, eq(categories.id, assoTransactionsCategories.categoryId))
         .where(and(
             eq(transactions.userId, userId),
-            sql`${transactions.date}
-            ::timestamp >=
-            ${startDate}`,
-            sql`${transactions.date}
-            ::timestamp <
-            ${endDate}`
+            gte(transactions.date, startDate),
+            lt(transactions.date, endDate)
         ))
         .orderBy(transactions.date)
 
