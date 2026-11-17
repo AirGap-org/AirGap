@@ -15,3 +15,11 @@ export const getErrorCode = (error: unknown): string | undefined =>
 
 export const getErrorMessage = (error: unknown, fallback: string): string =>
     asErrorWithDetails(error).message || fallback
+
+/** Une erreur HTTP explicite (404, 403, 409...) ne doit pas être masquée en 500. */
+export const isHttpError = (error: unknown): boolean =>
+    getErrorStatusCode(error) !== undefined
+
+export const rethrowIfHttpError = (error: unknown): void => {
+    if (isHttpError(error)) throw error
+}

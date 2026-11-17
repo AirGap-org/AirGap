@@ -1,15 +1,14 @@
 import {z} from 'zod';
 import {updateCategory} from "#server/services/categories.service";
-import {getErrorCode} from "#server/utils/errors";
+import {getErrorCode, rethrowIfHttpError} from "#server/utils/errors";
 
 const paramsSchema = z.object({
     id: z.string().uuid({message: "ID de catégorie invalide"})
 });
 
 const updateCategorySchema = z.object({
-    name: z.string().min(1).optional(),
-    type: z.enum(["depense", "revenu", "non_categorise"]).optional(),
-    isDefault: z.boolean().optional()
+    name: z.string().trim().min(1).max(255).optional(),
+    typeTransaction: z.enum(["depense", "revenu", "non_categorise"]).optional()
 });
 
 export default defineEventHandler(async (event) => {
@@ -32,6 +31,7 @@ export default defineEventHandler(async (event) => {
         }
         return {success: true, category: updatedCategory};
     } catch (error) {
+        rethrowIfHttpError(error)
         if (getErrorCode(error) === '23505') {
             throw createError({statusCode: 409, message: "Ce nom de catégorie existe déjà."});
         }

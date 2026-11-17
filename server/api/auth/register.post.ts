@@ -1,7 +1,5 @@
 import { z } from 'zod'
 import { registerUser } from '#server/services/auth.service'
-import { db } from '#server/db'
-import { accounts } from '~~/drizzle/schema'
 import { checkRateLimit, consumeRateLimitAttempt, resetRateLimit } from '#server/utils/rateLimit'
 import { getClientIP } from '#server/utils/clientIP'
 import { establishUserSession } from '#server/utils/auth'
@@ -38,18 +36,6 @@ export default defineEventHandler(async (event) => {
     }
 
     await resetRateLimit('register', clientIP)
-
-    try {
-        await db.insert(accounts).values({
-            userId: newUser.id,
-            accountName: 'Compte Courant',
-            accountType: 'Courant',
-            balance: '0',
-            currency: 'EUR'
-        })
-    } catch (e) {
-        console.error('Erreur création compte', e)
-    }
 
     await establishUserSession(event, {
         id: newUser.id,

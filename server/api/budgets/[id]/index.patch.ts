@@ -2,6 +2,7 @@ import {z} from 'zod'
 import {updateBudget} from "#server/services/budgets.service";
 import {assertAccountOwnership} from "#server/utils/ownership";
 import {assertCategoriesOwnership} from "#server/utils/categories";
+import {rethrowIfHttpError} from "#server/utils/errors";
 
 const paramsSchema = z.object({
     id: z.string().uuid({message: "ID de budget invalide"})
@@ -65,6 +66,7 @@ export default defineEventHandler(async (event) => {
             budget: updatedBudget
         }
     } catch (error) {
+        rethrowIfHttpError(error)
         console.error('Erreur Update Budget:', error)
         throw createError({
             statusCode: 500,

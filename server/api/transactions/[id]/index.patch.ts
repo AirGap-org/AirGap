@@ -2,6 +2,7 @@ import {z} from 'zod'
 import {updateTransaction} from "#server/services/transactions.service";
 import {assertAccountOwnership} from "#server/utils/ownership";
 import {assertCategoryOwnership} from "#server/utils/categories";
+import {rethrowIfHttpError} from "#server/utils/errors";
 
 const paramsSchema = z.object({
     id: z.string().uuid({message: "ID de transaction invalide"})
@@ -64,6 +65,7 @@ export default defineEventHandler(async (event) => {
             transaction: updatedTransaction
         }
     } catch (error) {
+        rethrowIfHttpError(error)
         console.error("Erreur PATCH transaction:", error)
         throw createError({
             statusCode: 500,
