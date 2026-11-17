@@ -1,11 +1,27 @@
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db } from "#server/db";
 import { users } from "~~/drizzle/schema";
 import { encryptText, decryptText } from "#server/utils/crypto";
 
 export const getUserByEmail = async (email: string) => {
     return await db.query.users.findFirst({
-        where: eq(users.email, email)
+        where: eq(users.email, email.trim().toLowerCase())
+    });
+}
+
+/** Colonnes strictement nécessaires au contrôle de session (ne pas exposer au client). */
+export const getUserSessionMeta = async (userId: string) => {
+    return await db.query.users.findFirst({
+        where: eq(users.id, userId),
+        columns: {
+            id: true,
+            email: true,
+            name: true,
+            authProvider: true,
+            twoFactorEnabled: true,
+            deletedAt: true,
+            sessionVersion: true
+        }
     });
 }
 
@@ -19,15 +35,9 @@ export const getUserById = async (userId: string) => {
             authProvider: true,
             twoFactorEnabled: true,
             createdAt: true,
-            updatedAt: true,
-            deletedAt: true
+            updatedAt: true
         }
     });
-}
-
-export const createUser = async (userInsertData: typeof users.$inferInsert) => {
-    const newUser = await db.insert(users).values(userInsertData).returning();
-    return newUser[0];
 }
 
 export const softDeleteUser = async (userId: string) => {
@@ -35,7 +45,8 @@ export const softDeleteUser = async (userId: string) => {
         .set({
             deletedAt: new Date(),
             email: `deleted-${userId}-${Date.now()}@deleted.com`,
-            name: 'Utilisateur supprimé'
+            name: 'Utilisateur supprimé',
+            sessionVersion: sql`${users.sessionVersion} + 1`
         })
         .where(eq(users.id, userId));
 }
@@ -46,9 +57,11 @@ export const updateUserPassword = async (userId: string, newHashedPassword: stri
         return db.update(users)
             .set({
                 password: newHashedPassword,
+                sessionVersion: sql`${users.sessionVersion} + 1`,
                 updatedAt: new Date()
             })
-            .where(eq(users.id, userId));
+            .where(eq(users.id, userId))
+            .returning({ sessionVersion: users.sessionVersion });
     } else {
         throw new Error("Impossible de modifier le mot de passe pour un utilisateur avec un fournisseur d'authentification externe");
     }
@@ -68,10 +81,12 @@ export const updateUserEmail = async (userId: string, email: string) => {
     if(user?.authProvider === 'local') {
         return db.update(users)
             .set({
-                email,
+                email: email.trim().toLowerCase(),
+                sessionVersion: sql`${users.sessionVersion} + 1`,
                 updatedAt: new Date()
             })
-            .where(eq(users.id, userId));
+            .where(eq(users.id, userId))
+            .returning({ sessionVersion: users.sessionVersion });
     } else {
         throw new Error("Impossible de modifier l'email pour un utilisateur avec un fournisseur d'authentification externe");
     }
@@ -86,9 +101,11 @@ export const updateUserTwoFactor = async (
         .set({
             twoFactorEnabled,
             twoFactorSecret: twoFactorSecret ? encryptText(twoFactorSecret) : null,
+            sessionVersion: sql`${users.sessionVersion} + 1`,
             updatedAt: new Date()
         })
         .where(eq(users.id, userId))
+        .returning({ sessionVersion: users.sessionVersion })
 }
 
 export const getUserTwoFactorSecret = async (userId: string) => {

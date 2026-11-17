@@ -22,6 +22,7 @@ const publicUserColumns = {
     name: users.name,
     authProvider: users.authProvider,
     twoFactorEnabled: users.twoFactorEnabled,
+    sessionVersion: users.sessionVersion,
     createdAt: users.createdAt,
     updatedAt: users.updatedAt
 }
@@ -32,20 +33,25 @@ const publicUserColumns = {
  * Retourne null si l'email est déjà pris (le handler gère l'erreur HTTP).
  */
 export const registerUser = async (data: typeof users.$inferInsert) => {
-    const existingUser = await getUserByEmail(data.email)
+    const normalizedData = {
+        ...data,
+        email: data.email.trim().toLowerCase()
+    }
+
+    const existingUser = await getUserByEmail(normalizedData.email)
     if (existingUser) return null
 
-    if (!data.password) {
+    if (!normalizedData.password) {
         throw createError({ statusCode: 400, message: 'Mot de passe requis' })
     }
 
-    const hashedPassword = await hashUserPassword(data.password)
+    const hashedPassword = await hashUserPassword(normalizedData.password)
 
     try {
         return await db.transaction(async (tx) => {
             const [newUser] = await tx.insert(users)
                 .values({
-                    ...data,
+                    ...normalizedData,
                     password: hashedPassword
                 })
                 .returning(publicUserColumns)

@@ -10,6 +10,7 @@ type OAuthUser = {
     name?: string | null
     authProvider: string
     twoFactorEnabled: boolean
+    sessionVersion: number
 }
 
 /**

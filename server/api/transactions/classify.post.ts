@@ -4,6 +4,9 @@ import {eq, isNull, or} from 'drizzle-orm';
 import {db} from "#server/db";
 import {categories} from "~~/drizzle/schema";
 import {requireAuth} from "#server/utils/auth";
+import {assertCategoriesOwnership} from "#server/utils/categories";
+import {enforceRateLimit} from "#server/utils/rateLimit";
+import {mapWithConcurrency} from "#server/utils/concurrency";
 import { useRuntimeConfig } from '#imports';
 
 const getAiPredictUrl = () => {
@@ -13,17 +16,17 @@ const getAiPredictUrl = () => {
 
 const classifySchema = z.object({
     transactions: z.array(z.object({
-        description: z.string().optional(),
-        amount: z.number().or(z.string()).optional(),
+        description: z.string().trim().max(1000).optional(),
+        amount: z.union([z.number().finite(), z.string().max(64)]).optional(),
         selectedCategoryId: z.string().uuid().nullable().optional(),
         typeTransaction: z.enum(["depense", "revenu", "non_categorise"]).optional()
-    }).passthrough())
+    }).passthrough()).min(1).max(500, "Trop de transactions à classer")
 });
 
 const normalizeCategoryName = (value = '') => value
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
-    .replaceAll('/&/g', ' et ')
+    .replace(/&/g, ' et ')
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, ' ')
     .trim();
@@ -113,15 +116,23 @@ const predictCategoryForTransaction = async (transaction: TransactionToClassify,
             body: JSON.stringify({
                 libelle: description,
                 montant: amount
-            })
+            }),
+            signal: AbortSignal.timeout(5_000)
         });
 
-        if (!response.ok) {
-            console.warn('Erreur IA pour la transaction CSV:', response.status, await response.text());
+        const text = await response.text();
+
+        if (text.length > 20_000) {
+            console.warn('Réponse IA trop volumineuse pour la transaction CSV');
             return null;
         }
 
-        const payload = await response.json();
+        if (!response.ok) {
+            console.warn('Erreur IA pour la transaction CSV:', response.status);
+            return null;
+        }
+
+        const payload = text ? JSON.parse(text) : {};
         const predictedCategory = payload?.categorie || payload?.category || payload?.categoryName || payload?.nomCategorie;
         if (!predictedCategory) return null;
 
@@ -138,6 +149,9 @@ const predictCategoryForTransaction = async (transaction: TransactionToClassify,
 
 export default defineEventHandler(async (event) => {
     const user = await requireAuth(event);
+
+    await enforceRateLimit('classify', user.id, 30)
+
     const result = await readValidatedBody(event, (body) => classifySchema.safeParse(body));
 
     if (!result.success) {
@@ -146,23 +160,42 @@ export default defineEventHandler(async (event) => {
 
     const {transactions} = result.data;
 
-    const enrichedTransactions = await Promise.all(transactions.map(async (tx) => {
+    await assertCategoriesOwnership(
+        transactions
+            .map(transaction => transaction.selectedCategoryId)
+            .filter((categoryId): categoryId is string => Boolean(categoryId)),
+        user.id
+    )
+
+    const config = useRuntimeConfig()
+    const aiEnabled = config.ai?.enabled !== false
+
+    const fallback = (tx: typeof transactions[number]) => ({
+        ...tx,
+        typeTransaction: tx.typeTransaction || (Number(tx.amount ?? 0) >= 0 ? 'revenu' : 'depense'),
+        selectedCategoryId: tx.selectedCategoryId ?? null,
+        status: 'ready' as const
+    })
+
+    if (!aiEnabled) {
+        return {
+            transactions: transactions.map(fallback),
+            aiEnabled: false
+        }
+    }
+
+    const enrichedTransactions = await mapWithConcurrency(transactions, 3, async (tx) => {
         if (tx.selectedCategoryId) {
-            return { ...tx, status: 'ready' };
+            return { ...tx, status: 'ready' as const };
         }
 
         const predictedCategoryId = await predictCategoryForTransaction(tx, user.id);
         if (predictedCategoryId) {
-            return { ...tx, selectedCategoryId: predictedCategoryId, status: 'ready' };
+            return { ...tx, selectedCategoryId: predictedCategoryId, status: 'ready' as const };
         }
 
-        return {
-            ...tx,
-            typeTransaction: tx.typeTransaction || (Number(tx.amount ?? 0) >= 0 ? 'revenu' : 'depense'),
-            selectedCategoryId: null,
-            status: 'ready'
-        };
-    }));
+        return fallback(tx)
+    });
 
-    return { transactions: enrichedTransactions };
+    return { transactions: enrichedTransactions, aiEnabled: true };
 });

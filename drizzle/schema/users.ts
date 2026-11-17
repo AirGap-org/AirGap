@@ -1,5 +1,5 @@
-import { pgTable, uuid, varchar, timestamp, text, boolean } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { pgTable, uuid, varchar, timestamp, text, boolean, integer, index, uniqueIndex } from "drizzle-orm/pg-core";
+import { relations, sql } from "drizzle-orm";
 import { accounts } from "./accounts";
 import { budgets } from "./budgets";
 import { transactions } from "./transactions";
@@ -16,6 +16,12 @@ export const users = pgTable('users', {
     deletedAt: timestamp('deletedAt'),
     twoFactorEnabled: boolean('two_factor_enabled').default(false).notNull(),
     twoFactorSecret: text('two_factor_secret'),
+    sessionVersion: integer('session_version').notNull().default(0),
+}, (table) => {
+    return [
+        uniqueIndex('users_email_lower_idx').on(sql`lower(${table.email})`),
+        index('users_deleted_at_idx').on(table.deletedAt),
+    ];
 });
 
 export const userRelations = relations(users, ({many}) => ({

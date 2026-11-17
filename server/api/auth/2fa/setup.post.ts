@@ -4,6 +4,7 @@ import QRCode from 'qrcode'
 import { getUserTwoFactorSecret, updateUserTwoFactor } from '#server/services/user.service'
 import { checkRateLimit, consumeRateLimitAttempt } from '#server/utils/rateLimit'
 import { assertTwoFactorCanBeConfigured } from '#server/utils/twoFactor'
+import { updateUserSession } from '#server/utils/auth'
 
 export default defineEventHandler(async (event) => {
     const session = await requireAuth(event)
@@ -28,7 +29,11 @@ export default defineEventHandler(async (event) => {
     const otpauthUrl = createTOTPKeyURI('AirGap', session.email, secretBytes, 30, 6)
     const qrCode = await QRCode.toDataURL(otpauthUrl)
 
-    await updateUserTwoFactor(session.id, false, secret)
+    const [updated] = await updateUserTwoFactor(session.id, false, secret)
+
+    if (updated) {
+        await updateUserSession(event, { sessionVersion: updated.sessionVersion })
+    }
 
     return { qrCode, secret }
 })

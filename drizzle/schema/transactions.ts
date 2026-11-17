@@ -1,4 +1,4 @@
-import {pgTable, uuid, timestamp, numeric, varchar, text} from 'drizzle-orm/pg-core';
+import {pgTable, uuid, timestamp, numeric, varchar, text, index} from 'drizzle-orm/pg-core';
 import {accounts} from './accounts';
 import {relations} from "drizzle-orm";
 import {senderRecipient} from "./senderRecipient";
@@ -22,6 +22,12 @@ export const transactions = pgTable('transactions', {
     date: timestamp('date').notNull().defaultNow(),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+}, (table) => {
+    return [
+        index('transactions_user_date_idx').on(table.userId, table.date),
+        index('transactions_user_type_idx').on(table.userId, table.typeTransaction),
+        index('transactions_account_idx').on(table.accountId),
+    ];
 });
 
 export const transactionRelations = relations(transactions, ({ one, many }) => ({

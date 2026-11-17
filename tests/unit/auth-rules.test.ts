@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isUserActive } from '#server/utils/userStatus'
+import { isSessionVersionValid, isUserActive } from '#server/utils/userStatus'
 import { assertTwoFactorCanBeConfigured } from '#server/utils/twoFactor'
 
 describe('isUserActive', () => {
@@ -11,6 +11,14 @@ describe('isUserActive', () => {
         expect(isUserActive({ deletedAt: new Date() })).toBe(false)
         expect(isUserActive(null)).toBe(false)
         expect(isUserActive(undefined)).toBe(false)
+    })
+})
+
+describe('isSessionVersionValid', () => {
+    it('accepte uniquement la version courante', () => {
+        expect(isSessionVersionValid(2, 2)).toBe(true)
+        expect(isSessionVersionValid(1, 2)).toBe(false)
+        expect(isSessionVersionValid(undefined, 0)).toBe(false)
     })
 })
 

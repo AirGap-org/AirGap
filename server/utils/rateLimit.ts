@@ -96,3 +96,24 @@ export const consumeRateLimitAttempt = async (scope: string, key: string, maxAtt
 export const resetRateLimit = async (scope: string, key: string): Promise<void> => {
     await storage.removeItem(`rl:${scope}:${key}`)
 }
+
+/** Vérifie puis consomme une tentative, avec une erreur 429 standardisée. */
+export const enforceRateLimit = async (scope: string, key: string, maxAttemptsOverride?: number): Promise<void> => {
+    const check = await checkRateLimit(scope, key)
+
+    if (!check.allowed) {
+        throw createError({
+            statusCode: 429,
+            message: `Trop de tentatives. Réessayez dans ${check.retryAfterSec}s.`
+        })
+    }
+
+    const attempt = await consumeRateLimitAttempt(scope, key, maxAttemptsOverride)
+
+    if (!attempt.allowed) {
+        throw createError({
+            statusCode: 429,
+            message: `Trop de tentatives. Réessayez dans ${attempt.retryAfterSec}s.`
+        })
+    }
+}

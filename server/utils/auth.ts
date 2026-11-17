@@ -2,7 +2,7 @@ import type { H3Event } from 'h3'
 import { eq } from 'drizzle-orm'
 import { db } from '#server/db'
 import { users } from '~~/drizzle/schema'
-import { isUserActive } from '#server/utils/userStatus'
+import { isSessionVersionValid, isUserActive } from '#server/utils/userStatus'
 
 declare module '#auth-utils' {
     interface User {
@@ -11,6 +11,7 @@ declare module '#auth-utils' {
         name?: string | null
         authProvider: string
         twoFactorEnabled: boolean
+        sessionVersion: number
     }
 
     interface SecureSessionData {
@@ -44,6 +45,15 @@ export const requireAuth = async (event: H3Event) => {
         throw createError({
             statusCode: 401,
             message: 'Session invalide ou compte supprimé'
+        })
+    }
+
+    // Toute action sensible incrémente sessionVersion : les autres sessions tombent.
+    if (!isSessionVersionValid(session.user.sessionVersion, dbUser.sessionVersion)) {
+        await clearUserSession(event)
+        throw createError({
+            statusCode: 401,
+            message: 'Session expirée. Reconnectez-vous.'
         })
     }
 
@@ -82,6 +92,7 @@ export const establishUserSession = async (event: H3Event, user: {
     name?: string | null
     authProvider: string
     twoFactorEnabled: boolean
+    sessionVersion: number
 }) => {
     await setUserSession(event, {
         user,
@@ -99,6 +110,7 @@ export const updateUserSession = async (
         name: string | null
         authProvider: string
         twoFactorEnabled: boolean
+        sessionVersion: number
     }>
 ) => {
     const session = await getUserSession(event)

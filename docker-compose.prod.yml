@@ -19,27 +19,43 @@ services:
     networks:
       - airgap_db_net
       - adminer_db_net
+    security_opt:
+      - no-new-privileges:true
 
   adminer:
     image: adminer:5
     restart: always
     profiles: [adminer]
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     networks:
       - adminer_db_net
+    security_opt:
+      - no-new-privileges:true
 
   airgap:
     image: ghcr.io/airgap-org/airgap:master
     restart: always
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       db:
         condition: service_healthy
     env_file: ".env"
     cap_drop:
       - ALL
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
     networks:
       - airgap_db_net
 
@@ -47,9 +63,11 @@ services:
     image: ghcr.io/airgap-org/airgap-ai:latest
     restart: always
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     cap_drop:
       - ALL
+    security_opt:
+      - no-new-privileges:true
     environment:
       ALLOWED_HOSTS: 'airgap-ai.aldwin-weber.fr'
 

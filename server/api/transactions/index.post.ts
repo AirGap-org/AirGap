@@ -5,9 +5,12 @@ import {assertCategoryOwnership} from "#server/utils/categories";
 
 const createTransactionSchema = z.object({
     amount: z.number({message: "Le montant est requis"})
-        .positive("Le montant doit être positif"),
+        .positive("Le montant doit être positif")
+        .max(1_000_000_000_000, "Le montant est trop élevé"),
     description: z.string({message: "La description est requise"})
-        .min(1, "La description ne peut pas être vide"),
+        .trim()
+        .min(1, "La description ne peut pas être vide")
+        .max(1000, "La description ne peut pas dépasser 1000 caractères"),
     date: z.coerce.date({message: "La date est requise"}),
     accountId: z.string({message: "Le compte est requis"}).uuid().nullable(),
     typeTransaction: z.enum(["depense", "revenu", "non_categorise"], {

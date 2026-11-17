@@ -2,14 +2,17 @@ import {z} from 'zod'
 import {getUserByEmail, updateUserEmail} from '#server/services/user.service'
 import {requireAuth} from '#server/utils/auth'
 import {verifyUserPassword} from '#server/utils/hashing'
+import {enforceRateLimit, resetRateLimit} from '#server/utils/rateLimit'
 
 const emailSchema = z.object({
-    email: z.email('Email invalide'),
-    currentPassword: z.string().min(1, 'Le mot de passe actuel est requis')
+    email: z.string().trim().toLowerCase().email('Email invalide').max(255),
+    currentPassword: z.string().min(1, 'Le mot de passe actuel est requis').max(1024)
 })
 
 export default defineEventHandler(async (event) => {
     const user = await requireAuth(event)
+
+    await enforceRateLimit('email-change', user.id, 5)
 
     const result = await readValidatedBody(event, (body) => emailSchema.safeParse(body))
     if (!result.success) {
@@ -19,7 +22,7 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    const newEmail = result.data.email
+    const newEmail = result.data.email.trim().toLowerCase()
 
     // Re-vérification du mot de passe pour cette action sensible
     const userInDb = await getUserByEmail(user.email)
@@ -36,7 +39,9 @@ export default defineEventHandler(async (event) => {
     }
 
     try {
-        await updateUserEmail(user.id, newEmail)
+        const [updated] = await updateUserEmail(user.id, newEmail)
+
+        await resetRateLimit('email-change', user.id)
 
         await setUserSession(event, {
             user: {
@@ -44,7 +49,8 @@ export default defineEventHandler(async (event) => {
                 email: newEmail,
                 name: user.name,
                 authProvider: user.authProvider,
-                twoFactorEnabled: user.twoFactorEnabled
+                twoFactorEnabled: user.twoFactorEnabled,
+                sessionVersion: updated?.sessionVersion ?? user.sessionVersion
             },
             secure: { twoFactorPending: false },
             loggedInAt: new Date()

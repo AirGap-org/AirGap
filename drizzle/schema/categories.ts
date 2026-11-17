@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, uuid, boolean } from 'drizzle-orm/pg-core';
+import { pgTable, varchar, timestamp, uuid, boolean, index } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 import { assoBudgetCategories } from "./assoBudgetCategories";
 import { assoTransactionsCategories } from "./assoTransactionsCategories";
@@ -14,6 +14,11 @@ export const categories = pgTable('categories', {
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
     isDefault: boolean('isDefault').default(false),
+}, (table) => {
+    return [
+        index('categories_user_idx').on(table.userId),
+        index('categories_user_name_idx').on(table.userId, table.name),
+    ];
 });
 
 export const categoryRelations = relations(categories, ({many, one}) => ({

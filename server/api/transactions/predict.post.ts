@@ -26,6 +26,15 @@ export default defineEventHandler(async (event) => {
         })
     }
 
+    const config = useRuntimeConfig()
+
+    if (config.ai?.enabled === false) {
+        throw createError({
+            statusCode: 503,
+            message: 'Le service de prédiction IA est désactivé.'
+        })
+    }
+
     const rl = await checkRateLimit('ai-predict', user.id)
     if (!rl.allowed) {
         throw createError({

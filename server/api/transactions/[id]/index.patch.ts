@@ -9,8 +9,8 @@ const paramsSchema = z.object({
 })
 
 const updateTransactionSchema = z.object({
-    amount: z.number().optional(),
-    description: z.string().min(1).optional(),
+    amount: z.number().positive().max(1_000_000_000_000).optional(),
+    description: z.string().trim().min(1).max(1000).optional(),
     date: z.coerce.date().optional(),
     typeTransaction: z.enum(["depense", "revenu", "non_categorise"]).optional(),
     categoryId: z.string().uuid().nullable().optional(),
