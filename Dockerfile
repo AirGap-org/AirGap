@@ -1,4 +1,4 @@
-FROM node:22 AS builder
+FROM node:26 AS builder
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY . ./
 RUN npm run build
 
 
-FROM node:22-slim
+FROM node:26-slim
 WORKDIR /app
 
 RUN npm i -g drizzle-kit@0.31.10 pg@8.23.0 drizzle-orm@0.45.2 --ignore-scripts
