@@ -182,6 +182,13 @@ deploy-production:
       set -euo pipefail
       cd "$PROD_DIR"
 
+      ai_container=$(docker compose -f docker-compose.prod.yml ps -q airgap-ai)
+      ai_status=$(docker inspect --format '{{.State.Health.Status}}' "$ai_container" 2>/dev/null || echo missing)
+      if [ "$ai_status" != "healthy" ]; then
+        echo "AirGap-AI n'est pas healthy. Lancez d'abord deploy-production dans AirGap-AI." >&2
+        exit 1
+      fi
+
       mkdir -p backups
       backup="backups/airgap-$(date +%Y%m%d-%H%M%S).sql.gz"
       docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$backup"
