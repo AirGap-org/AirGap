@@ -34,7 +34,9 @@ services:
       - no-new-privileges:true
 
   airgap:
-    image: ghcr.io/airgap-org/airgap:master
+    # En production, toujours passer un tag exact :
+    #   AIRGAP_IMAGE=registry.gitlab.com/akahira/airgap:v1.2.3
+    image: ${AIRGAP_IMAGE:-registry.gitlab.com/akahira/airgap:latest}
     restart: always
     ports:
       - "127.0.0.1:3000:3000"
@@ -59,6 +61,7 @@ services:
     networks:
       - airgap_db_net
 
+  # La migration de l'image et du réseau interne est traitée dans une MR dédiée.
   airgap-ai:
     image: ghcr.io/airgap-org/airgap-ai:latest
     restart: always

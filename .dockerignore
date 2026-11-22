@@ -3,7 +3,11 @@
 !.env.example
 .git
 .github
+.gitlab
+.gitlab-ci.yml
 .gitignore
+renovate.json
+CONTRIBUTING.md
 node_modules
 .output
 .nuxt
