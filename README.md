@@ -176,6 +176,11 @@ Images publiées :
 En production, utiliser un tag exact, jamais `:latest` :
 
 ```bash
+# Service IA (à déployer en premier)
+AIRGAP_AI_IMAGE=registry.gitlab.com/akahira/airgap-ai:v1.2.3 \
+  docker compose -f docker-compose.prod.yml up -d --no-deps airgap-ai
+
+# Application
 AIRGAP_IMAGE=registry.gitlab.com/akahira/airgap:v1.2.3 \
   docker compose -f docker-compose.prod.yml up -d --no-deps airgap
 ```
