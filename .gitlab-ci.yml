@@ -161,7 +161,16 @@ sync-compose:
     url: https://airgap.aldwin-weber.fr
   resource_group: production
   script:
-    - ssh -i "$SSH_PRIVATE_KEY" -p "${SSH_PORT:-22}" -o IdentitiesOnly=yes "$SSH_USER@$SSH_HOST" "if [ -f '$PROD_DIR/docker-compose.prod.yml' ]; then cp '$PROD_DIR/docker-compose.prod.yml' '$PROD_DIR/docker-compose.prod.yml.bak-\$(date +%Y%m%d-%H%M%S)'; fi"
+    - |
+      ssh -i "$SSH_PRIVATE_KEY" -p "${SSH_PORT:-22}" -o IdentitiesOnly=yes \
+        "$SSH_USER@$SSH_HOST" \
+        "PROD_DIR='$PROD_DIR' bash -s" <<'REMOTE'
+      set -eu
+      cd "$PROD_DIR"
+      if [ -f docker-compose.prod.yml ]; then
+        cp docker-compose.prod.yml "docker-compose.prod.yml.bak-$(date +%Y%m%d-%H%M%S)"
+      fi
+      REMOTE
     - scp -i "$SSH_PRIVATE_KEY" -P "${SSH_PORT:-22}" -o IdentitiesOnly=yes docker-compose.prod.yml "$SSH_USER@$SSH_HOST:$PROD_DIR/docker-compose.prod.yml"
     - ssh -i "$SSH_PRIVATE_KEY" -p "${SSH_PORT:-22}" -o IdentitiesOnly=yes "$SSH_USER@$SSH_HOST" "grep -q 'airgap_ai_net' '$PROD_DIR/docker-compose.prod.yml'"
   rules:
@@ -200,7 +209,7 @@ deploy-production:
 
       mkdir -p backups
       backup="backups/airgap-$(date +%Y%m%d-%H%M%S).sql.gz"
-      docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$backup"
+      docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' </dev/null | gzip > "$backup"
       test -s "$backup"
       gzip -t "$backup"
       echo "Backup: $backup"
