@@ -1,6 +1,6 @@
 export default defineNuxtConfig({
     compatibilityDate: "2026-03-05",
-    devtools: {enabled: true},
+    devtools: {enabled: process.env.NODE_ENV !== "production"},
     css: ["~/assets/css/styles.css"],
     modules: ["@nuxt/ui", "nuxt-auth-utils", "@nuxt/eslint", "shadcn-nuxt", "@vite-pwa/nuxt"],
 
@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     },
 
     runtimeConfig: {
+        appSecret: process.env.NUXT_APP_SECRET || '',
         databaseUrl: '',
         // N'activer QUE derrière un reverse proxy de confiance (nginx/Traefik)
         // qui strip le X-Forwarded-For entrant. Sinon l'IP client reste lue
@@ -20,10 +21,15 @@ export default defineNuxtConfig({
             lockoutMinutes: Number(process.env.RATE_LIMIT_LOCKOUT_MINUTES) || 15,
         },
         session: {
-            password: process.env.NUXT_SESSION_PASSWORD,
             maxAge: 60 * 60 * 24 * 30,
+            cookie: {
+                sameSite: 'lax',
+                secure: process.env.NODE_ENV === 'production',
+                path: '/',
+            },
         },
         ai: {
+            enabled: process.env.AI_ENABLED !== 'false',
             predictUrl: process.env.AIRGAP_AI_PREDICT_URL || 'https://airgap-ai.aldwin-weber.fr/predire',
         },
         oauth: {
@@ -87,7 +93,7 @@ export default defineNuxtConfig({
                 "background_color": "#0f172b",
                 "theme_color": "#16a34a"
          },
-         workbox: {
+         generateSW: {
             navigateFallback: '/',
          },
          devOptions: {

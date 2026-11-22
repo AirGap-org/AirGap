@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { db } from '#server/db'
 import { accounts } from '~~/drizzle/schema'
 
@@ -13,10 +13,25 @@ export const assertAccountOwnership = async (accountId: string | null | undefine
     if (!accountId) return
 
     const ownedAccount = await db.query.accounts.findFirst({
-        where: eq(accounts.id, accountId)
+        where: and(eq(accounts.id, accountId), eq(accounts.userId, userId))
     })
 
-    if (!ownedAccount || ownedAccount.userId !== userId) {
+    if (!ownedAccount) {
         throw createError({ statusCode: 403, message: 'Compte invalide ou non autorisé' })
+    }
+}
+
+/** Variante groupée, en une seule requête, pour les imports. */
+export const assertAccountsOwnership = async (accountIds: string[] | undefined, userId: string): Promise<void> => {
+    if (!accountIds?.length) return
+
+    const uniqueIds = [...new Set(accountIds)]
+
+    const ownedAccounts = await db.select({ id: accounts.id })
+        .from(accounts)
+        .where(and(inArray(accounts.id, uniqueIds), eq(accounts.userId, userId)))
+
+    if (ownedAccounts.length !== uniqueIds.length) {
+        throw createError({ statusCode: 403, message: 'Un compte est invalide ou non autorisé' })
     }
 }

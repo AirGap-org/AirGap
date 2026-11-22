@@ -81,7 +81,7 @@
               class="w-full cursor-pointer mt-2"
               @click="navigateTo('/auth/google', { external: true })"
           >
-            <img src="https://www.google.com/favicon.ico" class="w-4 h-4 mr-2" alt="Google"/>
+            <img src="https://www.google.com/favicon.ico" class="w-4 h-4 mr-2" alt="Google">
             S'enregistrer avec Google
           </Button>
 
@@ -92,7 +92,7 @@
               class="w-full cursor-pointer mt-2"
               @click="navigateTo('/auth/github', { external: true })"
           >
-            <img src="https://github.com/favicon.ico" class="w-4 h-4 mr-2" alt="GitHub" />
+            <img src="https://github.com/favicon.ico" class="w-4 h-4 mr-2" alt="GitHub" >
             S'enregistrer avec GitHub
           </Button>
 
@@ -129,6 +129,8 @@ const form = reactive({
 
 const errorMessage = ref("");
 const route = useRoute();
+const router = useRouter();
+const { fetch: refreshSession } = useUserSession();
 
 if(route.query.error === 'wrong_provider') {
   errorMessage.value = 'Votre email est déjà utilisé pour un autre compte';
@@ -150,8 +152,8 @@ async function handleRegister() {
       },
     })
 
-    await useUserSession().fetch()
-    await navigateTo('/')
+    await refreshSession()
+    await router.push('/')
   } catch (error) {
     errorMessage.value = error.data?.message || "Une erreur est survenue lors de l'inscription";
     console.error("Détails de l'erreur:", error.data);

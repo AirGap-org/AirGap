@@ -26,7 +26,8 @@
             />
           </Field>
           <Field>
-            <FieldLabel for="amount"
+            <FieldLabel
+for="amount"
                         class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mt-2">Montant
             </FieldLabel>
             <div class="relative">
@@ -44,7 +45,8 @@
             </div>
           </Field>
           <Field>
-            <RadioGroup v-model="form.type"
+            <RadioGroup
+v-model="form.type"
                         class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mt-4 mb-4">
               <div class="flex gap-3 mt-1">
                 <RadioGroupItem
@@ -63,7 +65,8 @@
             </RadioGroup>
           </Field>
           <Field class="mb-3">
-            <FieldLabel for="category"
+            <FieldLabel
+for="category"
                         class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Catégorie
             </FieldLabel>
             <Select
@@ -79,7 +82,7 @@
                 <SelectValue placeholder="Sélectionnez une catégorie"/>
               </SelectTrigger>
               <SelectContent class="dark:bg-neutral-700 bg-white">
-                <SelectItem class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" v-for="cat in filteredCategories" :key="cat.id" :value="cat.id.toString()">
+                <SelectItem v-for="cat in filteredCategories" :key="cat.id" class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer" :value="cat.id.toString()">
                   {{ cat.name }}
                 </SelectItem>
               </SelectContent>

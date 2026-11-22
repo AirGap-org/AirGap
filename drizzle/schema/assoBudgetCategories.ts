@@ -1,4 +1,4 @@
-import {pgTable, uuid, primaryKey} from "drizzle-orm/pg-core";
+import {pgTable, uuid, primaryKey, index} from "drizzle-orm/pg-core";
 import {relations} from "drizzle-orm";
 import { categories } from "./categories";
 import { budgets } from "./budgets";
@@ -11,6 +11,7 @@ export const assoBudgetCategories = pgTable('assoBudgetCategories', {
 }, (table) => {
     return [
         primaryKey({columns: [table.budgetId, table.categoryId]}),
+        index('asso_budget_category_idx').on(table.categoryId),
     ];
 });
 

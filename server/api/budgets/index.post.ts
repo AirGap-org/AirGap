@@ -5,13 +5,19 @@ import {assertCategoriesOwnership} from "#server/utils/categories";
 
 const createBudgetSchema = z.object({
     name: z.string({message: "Le nom est requis"})
-        .min(1, "Le nom ne peut pas être vide"),
+        .trim()
+        .min(1, "Le nom ne peut pas être vide")
+        .max(255, "Le nom ne peut pas dépasser 255 caractères"),
     amount: z.number({message: "Le montant est requis"})
-        .positive("Le montant doit être positif"),
+        .positive("Le montant doit être positif")
+        .max(1_000_000_000_000, "Le montant est trop élevé"),
     startDate: z.coerce.date({message: "La date de début est requise"}),
     endDate: z.coerce.date({message: "La date de fin est requise"}),
     accountId: z.string().uuid().optional().nullable(),
-    categoryIds: z.array(z.string().uuid()).optional()
+    categoryIds: z.array(z.string().uuid()).max(100, "Trop de catégories").optional()
+}).refine((data) => data.endDate >= data.startDate, {
+    message: "La date de fin doit être postérieure à la date de début",
+    path: ["endDate"]
 })
 
 export default defineEventHandler(async (event) => {

@@ -41,8 +41,12 @@ export default defineEventHandler(async (event) => {
 
     await resetRateLimit('2fa-disable', session.id)
 
-    await updateUserTwoFactor(session.id, false, null)
-    await updateUserSession(event, { twoFactorEnabled: false })
+    const [updated] = await updateUserTwoFactor(session.id, false, null)
+
+    await updateUserSession(event, {
+        twoFactorEnabled: false,
+        ...(updated ? { sessionVersion: updated.sessionVersion } : {})
+    })
 
     return { success: true }
 })

@@ -1,28 +1,34 @@
 import { db } from "#server/db";
 import { users } from "~~/drizzle/schema";
 import { eq } from "drizzle-orm";
-import { establishOAuthSession } from "#server/utils/oauth";
+import { establishOAuthSession, redirectOAuth } from "#server/utils/oauth";
 
 export default defineOAuthGoogleEventHandler({
     async onSuccess(event, { user }) {
+        const email = String(user.email || '').trim().toLowerCase()
+        const emailVerified = (user as { email_verified?: boolean }).email_verified
+
+        if (!email || emailVerified === false) {
+            return redirectOAuth(event, '/login?error=oauth')
+        }
 
         let dbUser = await db.query.users.findFirst({
-            where: eq(users.email, user.email)
+            where: eq(users.email, email)
         });
 
         if (dbUser && dbUser.authProvider !== 'google') {
-            return sendRedirect(event, `/login?error=wrong_provider`);
+            return redirectOAuth(event, `/login?error=wrong_provider`);
         }
 
         if (!dbUser) {
             const [newUser] = await db.insert(users).values({
-                email: user.email ?? '',
+                email,
                 name: user.name ?? '',
                 authProvider: 'google',
             }).returning();
 
             if (!newUser) {
-                return sendRedirect(event, '/login?error=oauth');
+                return redirectOAuth(event, '/login?error=oauth');
             }
 
             dbUser = newUser;
@@ -33,12 +39,13 @@ export default defineOAuthGoogleEventHandler({
             email: dbUser.email,
             name: dbUser.name,
             authProvider: dbUser.authProvider || 'google',
-            twoFactorEnabled: dbUser.twoFactorEnabled ?? false
+            twoFactorEnabled: dbUser.twoFactorEnabled ?? false,
+            sessionVersion: dbUser.sessionVersion
         })
     },
 
     async onError(event, error) {
         console.error('Google OAuth error:', error);
-        return sendRedirect(event, '/login?error=oauth');
+        return redirectOAuth(event, '/login?error=oauth');
     }
 });

@@ -23,14 +23,17 @@
                   @click="type.toggleMenu()"
               >
                 {{ type.label }}
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform"
+                <svg
+xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform"
                      :class="type.isOpen ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd"
+                  <path
+fill-rule="evenodd"
                         d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
                         clip-rule="evenodd"/>
                 </svg>
               </Button>
-              <div v-if="type.isOpen"
+              <div
+v-if="type.isOpen"
                    class="absolute top-full mt-2 right-0 w-full sm:w-32 bg-white dark:bg-neutral-700 rounded-lg shadow-xl border border-gray-100 dark:border-neutral-750 overflow-hidden z-50">
                 <Button
                     v-for="option in type.options"
@@ -111,9 +114,9 @@
                         :x="(d, i) => i"
                         :y="[(d) => d.income, (d) => d.expense]"
                         :color="(d, i) => (i === 0 ? d.income : d.expense) > 0 ? [THEME.colors.income, THEME.colors.expense][i] : 'transparent'"
-                        :groupPadding="0"
-                        :barPadding="0.4"
-                        :barMaxWidth="40"
+                        :group-padding="0"
+                        :bar-padding="0.4"
+                        :bar-max-width="40"
                     />
                     <VisAxis
                         type="x"
@@ -145,11 +148,14 @@
           <CardContent>
             <ChartContainer class="h-[350px]" :config="chartConfig">
               <VisXYContainer :data="currentYearBalanceData">
-                <VisArea :x="(d, i) => i" :y="[(d) => d.balance]" :color="() => chartConfig.income.color"
+                <VisArea
+:x="(d, i) => i" :y="[(d) => d.balance]" :color="() => chartConfig.income.color"
                          :opacity="0.3"/>
-                <VisLine :x="(d, i) => i" :y="[(d) => d.balance]" :color="() => chartConfig.income.color"
+                <VisLine
+:x="(d, i) => i" :y="[(d) => d.balance]" :color="() => chartConfig.income.color"
                          :line-width="2.5"/>
-                <VisAxis type="x" :tick-line="false" :domain-line="false" :grid-line="false" :num-ticks="6"
+                <VisAxis
+type="x" :tick-line="false" :domain-line="false" :grid-line="false" :num-ticks="6"
                          :tick-format="(d, i) => currentYearBalanceData[i]?.dateLabel"/>
                 <VisAxis type="y" :num-ticks="5" :tick-line="false" :domain-line="false" :tick-format="formatEuro"/>
                 <ChartTooltip/>

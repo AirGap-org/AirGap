@@ -31,11 +31,13 @@
 
           </CardContent>
           <CardFooter>
-            <Button type="button"
+            <Button
+type="button"
                     class="cursor-pointer border hover:text-neutral-600 text-neutral-700 dark:text-neutral-300 mr-2"
                     @click="resetProfileForm">Annuler
             </Button>
-            <Button type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
+            <Button
+type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
                     :disabled="!isProfileValid || isLoading">
               <span v-if="isLoading">Chargement...</span>
               <span v-else>Enregistrer</span>
@@ -66,11 +68,13 @@
               </Field>
             </CardContent>
             <CardFooter>
-              <Button type="button"
+              <Button
+type="button"
                       class="cursor-pointer border hover:text-neutral-600 text-neutral-700 dark:text-neutral-300 mr-2"
                       @click="resetEmailForm">Annuler
               </Button>
-              <Button type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
+              <Button
+type="submit" class="cursor-pointer border hover:text-primary-600 text-primary-550"
                       :disabled="!isEmailValid || isLoading">
                 <span v-if="isLoading">Chargement...</span>
                 <span v-else>Enregistrer</span>
@@ -123,11 +127,13 @@
               </Field>
             </CardContent>
             <CardFooter>
-              <Button type="button"
+              <Button
+type="button"
                       class="cursor-pointer border hover:text-neutral-600 text-neutral-700 dark:text-neutral-300 mr-2"
                       @click="resetPasswordForm">Annuler
               </Button>
-              <Button type="submit" class="cursor-pointer border rounded hover:text-primary-600 text-primary-550"
+              <Button
+type="submit" class="cursor-pointer border rounded hover:text-primary-600 text-primary-550"
                       :disabled="!isPasswordValid || isLoading">
                 <span v-if="isLoading">Chargement...</span>
                 <span v-else>Enregistrer</span>
@@ -159,14 +165,15 @@
           <div class="flex flex-col gap-2">
             <p class="text-sm font-medium text-red-600 dark:text-red-400">Zone dangereuse</p>
             <AlertDialog v-model:open="isDeleteDialogOpen">
-              <AlertDialogTrigger asChild>
+              <AlertDialogTrigger as-child>
                 <Button class="w-full cursor-pointer bg-red-600 hover:bg-red-700 text-white border border-red-700" variant="destructive">
                   Supprimer mon compte
                 </Button>
               </AlertDialogTrigger>
 
             <!-- Compte local : demande le mot de passe -->
-            <AlertDialogContent v-if="authProvider === 'local'"
+            <AlertDialogContent
+v-if="authProvider === 'local'"
                                 class="bg-white dark:bg-neutral-900/60 backdrop-blur-sm">
               <AlertDialogHeader>
                 <AlertDialogTitle>Êtes-vous absolument sûr ?</AlertDialogTitle>
@@ -184,7 +191,8 @@
               </div>
 
               <AlertDialogFooter>
-                <AlertDialogCancel class="border cursor-pointer hover:text-neutral-600"
+                <AlertDialogCancel
+class="border cursor-pointer hover:text-neutral-600"
                                    @click="passwordForDeletion = ''">
                   Annuler
                 </AlertDialogCancel>
@@ -237,6 +245,14 @@ import {z} from 'zod'
 import {Alert} from "~/components/ui/alert";
 import {AlertDialog, AlertDialogFooter, AlertDialogHeader} from "~/components/ui/alert-dialog";
 import TwoFactorSettings from "~/components/TwoFactorSettings.vue";
+
+const getErrorMessage = (err: unknown, fallback: string) => {
+  if (typeof err === 'object' && err !== null && 'data' in err) {
+    const data = (err as { data?: { message?: string } }).data
+    if (data?.message) return data.message
+  }
+  return fallback
+}
 
 useHead({
   title: 'AirGap | Profil',
@@ -343,8 +359,8 @@ async function updateProfile() {
     await refreshSession()
 
     success.value = 'Profil mis à jour avec succès !'
-  } catch (err: any) {
-    error.value = err.data?.message || 'Erreur lors de la mise à jour.'
+  } catch (err) {
+    error.value = getErrorMessage(err, 'Erreur lors de la mise à jour.')
   } finally {
     isLoading.value = false
   }
@@ -364,8 +380,8 @@ async function updateEmail() {
     await refreshSession()
 
     success.value = 'Email mis a jour avec succes !'
-  } catch (err: any) {
-    error.value = err.data?.message || "Erreur lors de la mise a jour de l'email."
+  } catch (err) {
+    error.value = getErrorMessage(err, "Erreur lors de la mise a jour de l'email.")
   } finally {
     isLoading.value = false
   }
@@ -413,8 +429,8 @@ async function confirmDeleteAccount() {
     isDeleteDialogOpen.value = false
     await clear()
     await navigateTo('/login')
-  } catch (err: any) {
-    alert(err.data?.message || 'Erreur lors de la suppression')
+  } catch (err) {
+    alert(getErrorMessage(err, 'Erreur lors de la suppression'))
     passwordForDeletion.value = ''
   } finally {
     isLoading.value = false

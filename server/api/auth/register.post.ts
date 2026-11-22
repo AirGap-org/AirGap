@@ -1,15 +1,13 @@
 import { z } from 'zod'
 import { registerUser } from '#server/services/auth.service'
-import { db } from '#server/db'
-import { accounts } from '~~/drizzle/schema'
 import { checkRateLimit, consumeRateLimitAttempt, resetRateLimit } from '#server/utils/rateLimit'
 import { getClientIP } from '#server/utils/clientIP'
 import { establishUserSession } from '#server/utils/auth'
 
 const registerSchema = z.object({
-    email: z.string().email(),
-    password: z.string().min(8),
-    name: z.string().min(2)
+    email: z.string().trim().toLowerCase().email().max(255),
+    password: z.string().min(8, 'Le mot de passe doit faire au moins 8 caractères').max(72, 'Le mot de passe ne peut pas dépasser 72 caractères'),
+    name: z.string().trim().min(2).max(255)
 })
 
 export default defineEventHandler(async (event) => {
@@ -39,25 +37,16 @@ export default defineEventHandler(async (event) => {
 
     await resetRateLimit('register', clientIP)
 
-    try {
-        await db.insert(accounts).values({
-            userId: newUser.id,
-            accountName: 'Compte Courant',
-            accountType: 'Courant',
-            balance: '0',
-            currency: 'EUR'
-        })
-    } catch (e) {
-        console.error('Erreur création compte', e)
-    }
-
     await establishUserSession(event, {
         id: newUser.id,
         email: newUser.email,
         name: newUser.name,
         authProvider: newUser.authProvider ?? 'local',
-        twoFactorEnabled: newUser.twoFactorEnabled ?? false
+        twoFactorEnabled: newUser.twoFactorEnabled ?? false,
+        sessionVersion: newUser.sessionVersion
     })
 
-    return { success: true, user: newUser }
+    const { sessionVersion: _sessionVersion, ...publicUser } = newUser
+
+    return { success: true, user: publicUser }
 })

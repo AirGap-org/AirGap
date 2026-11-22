@@ -31,12 +31,12 @@
         <h2 class="text-2xl font-semibold mb-4 text-neutral-900 dark:text-neutral-50">Rejoindre la communauté</h2>
         <p class="text-neutral-700 dark:text-neutral-300 mb-6">
           AirGap est un projet vivant. Vous avez repéré un bug ? Vous voulez proposer une amélioration ? Le code est
-          ouvert, la discussion aussi. Rejoignez-moi sur GitHub pour ouvrir une issue ou proposer une Pull Request.
+          ouvert, la discussion aussi. Rejoignez-moi sur GitLab pour ouvrir une issue ou proposer une merge request.
         </p>
         <div class="flex flex-col sm:flex-row gap-4">
           <Button
               class="cursor-pointer btn btn-primary text-primary-50 bg-primary-500 hover:bg-primary-600 focus:ring-primary-300 transition-colors">
-            <NuxtLink to="https://github.com/qldwin/AirGap">GitHub</NuxtLink>
+            <NuxtLink to="https://gitlab.com/Akahira/AirGap">GitLab</NuxtLink>
           </Button>
           <Button
               class="cursor-pointer btn btn-outline text-primary-50 bg-primary-500 hover:bg-primary-600 focus:ring-primary-300 transition-colors">

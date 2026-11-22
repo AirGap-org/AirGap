@@ -51,7 +51,8 @@
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                     </svg>
                   </Button>
-                  <div v-if="isDropdownOpen"
+                  <div
+v-if="isDropdownOpen"
                       class="absolute right-0 mt-2 w-48 bg-white dark:bg-neutral-900 rounded-md overflow-hidden shadow-xl border border-neutral-200 dark:border-neutral-750">
                     <Button class="w-full px-4 py-2 text-sm text-neutral-700 dark:text-neutral-300 hover:text-primary-500 dark:hover:bg-neutral-800 transition-colors">
                     <NuxtLink

@@ -1,4 +1,4 @@
-import {pgTable, uuid, varchar, timestamp, decimal} from "drizzle-orm/pg-core";
+import {pgTable, uuid, varchar, timestamp, decimal, index} from "drizzle-orm/pg-core";
 import { users } from "./users";
 import { relations } from "drizzle-orm";
 import { transactions } from "./transactions";
@@ -16,6 +16,10 @@ export const accounts = pgTable('accounts', {
     currency: varchar('currency', {length: 3}).notNull(),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+}, (table) => {
+    return [
+        index('accounts_user_idx').on(table.userId),
+    ];
 });
 
 export const accountRelations = relations(accounts, ({one,many}) => ({

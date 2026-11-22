@@ -225,9 +225,12 @@ const normalizeCategoryName = (value = '') => value
   .toLowerCase()
   .trim();
 
-const ensureCategoryForPrediction = async (predictedCategory, typeTransaction) => {
+const loadCategories = async () => {
   const categoriesResponse = await $fetch('/api/categories');
-  const allCategories = categoriesResponse.categories || [];
+  return categoriesResponse.categories || [];
+};
+
+const findCategoryForPrediction = (allCategories, predictedCategory, typeTransaction) => {
   const wantedType = typeTransaction === 'revenu' ? 'revenu' : 'depense';
   const normalizedPrediction = normalizeCategoryName(predictedCategory);
 
@@ -240,7 +243,7 @@ const ensureCategoryForPrediction = async (predictedCategory, typeTransaction) =
     return existingCategory;
   }
 
-  const closeMatch = allCategories.find(cat => {
+  return allCategories.find(cat => {
     const normalizedName = normalizeCategoryName(cat.name);
     const predictionTokens = normalizedPrediction.split(/\s+/).filter(Boolean);
     const categoryTokens = normalizedName.split(/\s+/).filter(Boolean);
@@ -248,13 +251,7 @@ const ensureCategoryForPrediction = async (predictedCategory, typeTransaction) =
 
     const overlap = predictionTokens.filter(token => categoryTokens.includes(token)).length;
     return overlap > 0 && (cat.typeTransaction === wantedType || cat.typeTransaction === 'non_categorise');
-  });
-
-  if (closeMatch) {
-    return closeMatch;
-  }
-
-  return null;
+  }) || null;
 };
 
 const predictAllTransactions = async () => {
@@ -267,36 +264,46 @@ const predictAllTransactions = async () => {
   let updatedCount = 0;
 
   try {
-    for (const transaction of rows) {
-      if (!transaction?.id) {
-        continue;
-      }
+    const allCategories = await loadCategories();
+    const candidates = rows.filter(transaction => transaction?.id)
 
-      const prediction = await $fetch('/api/transactions/predict', {
-        method: 'POST',
-        body: {
-          libelle: transaction.description || '',
-          montant: Number(transaction.amount ?? 0)
+    // Limite la charge sur le service IA et sur l'API interne.
+    for (let i = 0; i < candidates.length; i += 3) {
+      await Promise.all(candidates.slice(i, i + 3).map(async (transaction) => {
+        try {
+          const prediction = await $fetch('/api/transactions/predict', {
+            method: 'POST',
+            body: {
+              libelle: transaction.description || '',
+              montant: Number(transaction.amount ?? 0)
+            }
+          });
+
+          const predictedCategoryName = prediction?.categorie || prediction?.category || prediction?.categoryName || prediction?.nomCategorie;
+          if (!predictedCategoryName) {
+            return;
+          }
+
+          const transactionType = transaction.typeTransaction === 'revenu' ? 'revenu' : 'depense';
+          const category = findCategoryForPrediction(allCategories, predictedCategoryName, transactionType);
+
+          if (!category) {
+            return;
+          }
+
+          await $fetch(`/api/transactions/${transaction.id}`, {
+            method: 'PATCH',
+            body: {
+              categoryId: category.id,
+              typeTransaction: transactionType
+            }
+          });
+
+          updatedCount++;
+        } catch (error) {
+          console.error(`Erreur de catégorisation pour ${transaction.id}:`, error);
         }
-      });
-
-      const predictedCategoryName = prediction?.categorie || prediction?.category || prediction?.categoryName || prediction?.nomCategorie;
-      if (!predictedCategoryName) {
-        continue;
-      }
-
-      const transactionType = transaction.typeTransaction === 'revenu' ? 'revenu' : 'depense';
-      const category = await ensureCategoryForPrediction(predictedCategoryName, transactionType);
-
-      await $fetch(`/api/transactions/${transaction.id}`, {
-        method: 'PATCH',
-        body: {
-          categoryId: category.id,
-          typeTransaction: transactionType
-        }
-      });
-
-      updatedCount++;
+      }))
     }
 
     if (updatedCount === 0) {
@@ -324,14 +331,15 @@ const magicTransaction = async (transaction) => {
       }
     });
 
-    const predictedCategoryName = prediction?.categorie;
+    const predictedCategoryName = prediction?.categorie || prediction?.category || prediction?.categoryName || prediction?.nomCategorie;
     if (!predictedCategoryName) {
       alert('Aucune catégorie prédite par l\'IA.');
       return;
     }
 
     const transactionType = transaction.typeTransaction === 'revenu' ? 'revenu' : 'depense';
-    const category = await ensureCategoryForPrediction(predictedCategoryName, transactionType);
+    const allCategories = await loadCategories();
+    const category = findCategoryForPrediction(allCategories, predictedCategoryName, transactionType);
 
     if (!category) {
       alert('Aucune catégorie existante correspondante n\'a été trouvée pour cette prédiction.');

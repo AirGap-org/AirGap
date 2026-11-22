@@ -1,7 +1,7 @@
 import {db} from "#server/db";
 import {eq} from "drizzle-orm";
 import {users} from "~~/drizzle/schema";
-import { establishOAuthSession } from "#server/utils/oauth";
+import { establishOAuthSession, redirectOAuth } from "#server/utils/oauth";
 
 export default defineOAuthGitHubEventHandler({
     config: {
@@ -9,29 +9,32 @@ export default defineOAuthGitHubEventHandler({
     },
 
     async onSuccess(event, {user, tokens}) {
-        let userEmail = user.email;
+        let userEmail = user.email ? String(user.email).trim().toLowerCase() : null;
 
         if (!userEmail) {
             try {
-                const res = await $fetch<Array<{ email: string; primary: boolean }>>(
+                const res = await $fetch<Array<{ email: string; primary: boolean; verified: boolean }>>(
                     'https://api.github.com/user/emails',
                     {
                         headers:
                             {
                                 Authorization: `Bearer ${tokens.access_token}`,
                                 'User-Agent': 'AirGap'
-                            }
+                            },
+                        signal: AbortSignal.timeout(5_000)
                     }
                 );
-                userEmail = res?.find((e) => e.primary)?.email || res?.[0]?.email || null;
+                const verifiedEmails = (res || []).filter((entry) => entry.verified);
+                userEmail = verifiedEmails.find((e) => e.primary)?.email || verifiedEmails[0]?.email || null;
+                userEmail = userEmail ? userEmail.trim().toLowerCase() : null;
             } catch (e) {
                 console.error('Failed to fetch GitHub email:', e);
-                return sendRedirect(event, '/login?error=oauth');
+                return redirectOAuth(event, '/login?error=oauth');
             }
         }
 
         if (!userEmail) {
-            return sendRedirect(event, '/login?error=oauth');
+            return redirectOAuth(event, '/login?error=oauth');
         }
 
         let dbUser = await db.query.users.findFirst({
@@ -39,7 +42,7 @@ export default defineOAuthGitHubEventHandler({
         });
 
         if (dbUser && dbUser.authProvider !== 'github') {
-            return sendRedirect(event, `/login?error=wrong_provider`);
+            return redirectOAuth(event, `/login?error=wrong_provider`);
         }
 
         if (!dbUser) {
@@ -50,7 +53,7 @@ export default defineOAuthGitHubEventHandler({
             }).returning();
 
             if (!newUser) {
-                return sendRedirect(event, '/login?error=oauth');
+                return redirectOAuth(event, '/login?error=oauth');
             }
 
             dbUser = newUser;
@@ -61,12 +64,13 @@ export default defineOAuthGitHubEventHandler({
             email: dbUser.email,
             name: dbUser.name,
             authProvider: dbUser.authProvider || 'github',
-            twoFactorEnabled: dbUser.twoFactorEnabled ?? false
+            twoFactorEnabled: dbUser.twoFactorEnabled ?? false,
+            sessionVersion: dbUser.sessionVersion
         })
     },
 
     async onError(event, error) {
         console.error('GitHub OAuth error:', error);
-        return sendRedirect(event, '/login?error=oauth');
+        return redirectOAuth(event, '/login?error=oauth');
     }
 });

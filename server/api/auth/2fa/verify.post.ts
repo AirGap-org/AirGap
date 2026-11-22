@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import { verifyTOTP } from '@oslojs/otp'
 import { decodeBase32 } from '@oslojs/encoding'
-import { getUserTwoFactorSecret } from '#server/services/user.service'
+import { getUserSessionMeta, getUserTwoFactorSecret } from '#server/services/user.service'
+import { isSessionVersionValid, isUserActive } from '#server/utils/userStatus'
 import { checkRateLimit, consumeRateLimitAttempt, resetRateLimit } from '#server/utils/rateLimit'
 import { requirePendingTwoFactor } from '#server/utils/auth'
 
@@ -11,6 +12,19 @@ const schema = z.object({
 
 export default defineEventHandler(async (event) => {
     const session = await requirePendingTwoFactor(event)
+
+    // Le compte a pu être supprimé, la 2FA désactivée ou le mot de passe changé
+    // depuis l'émission du cookie de session en attente.
+    const dbUser = await getUserSessionMeta(session.user.id)
+
+    if (
+        !isUserActive(dbUser)
+        || !dbUser.twoFactorEnabled
+        || !isSessionVersionValid(session.user.sessionVersion, dbUser.sessionVersion)
+    ) {
+        await clearUserSession(event)
+        throw createError({ statusCode: 401, message: 'Session invalide ou expirée' })
+    }
 
     const result = await readValidatedBody(event, body => schema.safeParse(body))
     if (!result.success) {
@@ -43,7 +57,10 @@ export default defineEventHandler(async (event) => {
     await resetRateLimit('2fa', session.user.id)
 
     await setUserSession(event, {
-        user: session.user,
+        user: {
+            ...session.user,
+            sessionVersion: dbUser.sessionVersion
+        },
         secure: { twoFactorPending: false },
         loggedInAt: new Date()
     })

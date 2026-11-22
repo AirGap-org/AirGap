@@ -1,14 +1,20 @@
-import withNuxt from '.nuxt/eslint.config.mjs'
+import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt(
-    // your custom flat configs go here, for example:
-    // {
-    //   files: ['**/*.ts', '**/*.tsx'],
-    //   rules: {
-    //     'no-console': 'off' // allow console.log in TypeScript files
-    //   }
-    // },
-    // {
-    //   ...
-    // }
+    {
+        // Composants générés par shadcn : les props optionnelles n'ont pas
+        // vocation à être dupliquées avec une valeur par défaut.
+        files: ['app/components/ui/**/*.vue'],
+        rules: {
+            'vue/require-default-prop': 'off',
+            'vue/no-required-prop-with-default': 'off',
+            'vue/one-component-per-file': 'off',
+        },
+    },
+    {
+        // Les emits de ce projet utilisent le camelCase (ex. update:isOpen).
+        rules: {
+            'vue/v-on-event-hyphenation': 'off',
+        },
+    },
 )

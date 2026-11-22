@@ -3,7 +3,7 @@ import { updateUserProfile } from "#server/services/user.service";
 import { requireAuth } from "#server/utils/auth";
 
 const profileSchema = z.object({
-    name: z.string().min(1, "Le nom ne peut pas être vide")
+    name: z.string().trim().min(1, "Le nom ne peut pas être vide").max(255)
 })
 
 export default defineEventHandler(async (event) => {
@@ -27,7 +27,8 @@ export default defineEventHandler(async (event) => {
                 email: user.email,
                 name: newName,
                 authProvider: user.authProvider,
-                twoFactorEnabled: user.twoFactorEnabled
+                twoFactorEnabled: user.twoFactorEnabled,
+                sessionVersion: user.sessionVersion
             },
             secure: { twoFactorPending: false },
             loggedInAt: new Date()

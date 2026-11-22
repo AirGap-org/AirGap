@@ -1,14 +1,15 @@
 import {and, eq, isNull, or} from 'drizzle-orm';
 import {categories} from "~~/drizzle/schema";
+import type {TransactionType} from "~~/drizzle/schema";
 import {db} from "#server/db";
 
-export const getAllCategories = async (userId: string, typeEnum?: string) => {
+export const getAllCategories = async (userId: string, typeEnum?: TransactionType) => {
     const conditions = [
         or(eq(categories.userId, userId), isNull(categories.userId))
     ];
 
     if (typeEnum) {
-        conditions.push(eq(categories.typeTransaction, typeEnum as any));
+        conditions.push(eq(categories.typeTransaction, typeEnum));
     }
 
     return await db.select()

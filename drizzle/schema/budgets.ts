@@ -1,4 +1,4 @@
-import {pgTable, uuid, varchar, decimal, timestamp} from "drizzle-orm/pg-core";
+import {pgTable, uuid, varchar, decimal, timestamp, index} from "drizzle-orm/pg-core";
 import {users} from "./users";
 import {relations} from "drizzle-orm";
 import {accounts} from "./accounts";
@@ -18,6 +18,11 @@ export const budgets = pgTable('budgets', {
     endDate: timestamp('endDate').notNull(),
     createdAt: timestamp('createdAt').notNull().defaultNow(),
     updatedAt: timestamp('updatedAt').notNull().defaultNow(),
+}, (table) => {
+    return [
+        index('budgets_user_idx').on(table.userId),
+        index('budgets_account_idx').on(table.accountId),
+    ];
 });
 
 export const budgetRelations = relations(budgets, ({ one, many }) => ({

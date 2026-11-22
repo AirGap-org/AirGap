@@ -1,13 +1,17 @@
 import { z } from 'zod'
 import { getUserByEmail, softDeleteUser } from '#server/services/user.service'
 import { requireAuth } from '#server/utils/auth'
+import { verifyUserPassword } from '#server/utils/hashing'
+import { enforceRateLimit } from '#server/utils/rateLimit'
 
 const deleteSchema = z.object({
-    password: z.string().optional()
+    password: z.string().max(1024).optional()
 })
 
 export default defineEventHandler(async (event) => {
     const user = await requireAuth(event)
+
+    await enforceRateLimit('account-delete', user.id, 5)
 
     const result = await readValidatedBody(event, body => deleteSchema.safeParse(body))
     if (!result.success) throw createError({ statusCode: 400, message: 'Données invalides' })
@@ -24,7 +28,7 @@ export default defineEventHandler(async (event) => {
             throw createError({ statusCode: 400, message: 'Aucun mot de passe configuré' })
         }
 
-        if (!await verifyPassword(userInDb.password, result.data.password)) {
+        if (!await verifyUserPassword(userInDb.password, result.data.password)) {
             throw createError({ statusCode: 403, message: 'Mot de passe incorrect' })
         }
     }

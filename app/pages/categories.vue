@@ -30,25 +30,30 @@
           <section>
             <h2 class="text-xl font-semibold mb-4 text-neutral-900 dark:text-neutral-50">Mes catégories</h2>
 
-            <div v-if="userCategories.length > 0"
+            <div
+v-if="userCategories.length > 0"
                  class="shadow-sm rounded-lg border border-neutral-200 dark:border-neutral-700 divide-y divide-neutral-200 dark:divide-neutral-700">
-              <div v-for="category in userCategories" :key="category.id"
+              <div
+v-for="category in userCategories" :key="category.id"
                    class="flex items-center justify-between p-4 hover:bg-neutral-50 dark:hover:bg-neutral-800/50 transition-colors">
 
                 <div class="flex items-center gap-3">
                   <span class="font-medium text-neutral-900 dark:text-neutral-100">{{ category.name }}</span>
-                  <span class="text-xs px-2 py-0.5 rounded-full border"
+                  <span
+class="text-xs px-2 py-0.5 rounded-full border"
                         :class="category.typeTransaction === 'revenu' ? 'bg-primary-550/15 text-primary-550 border-primary-550/40' : 'bg-red-500/15 text-red-500 border-red-500/40'">
                     {{ category.typeTransaction === 'revenu' ? 'Revenu' : 'Dépense' }}
                   </span>
                 </div>
 
                 <div class="flex items-center space-x-1">
-                  <Button variant="ghost" class="cursor-pointer p-2 h-auto text-neutral-500 hover:text-primary-550"
+                  <Button
+variant="ghost" class="cursor-pointer p-2 h-auto text-neutral-500 hover:text-primary-550"
                           @click="editCategorie(category)">
                     <SquarePen class="h-4 w-4"/>
                   </Button>
-                  <Button variant="ghost" class="cursor-pointer p-2 h-auto text-neutral-500 hover:text-red-500"
+                  <Button
+variant="ghost" class="cursor-pointer p-2 h-auto text-neutral-500 hover:text-red-500"
                           @click="confirmDeleteCategorie(category)">
                     <TrashIcon class="h-4 w-4"/>
                   </Button>
@@ -56,20 +61,22 @@
               </div>
             </div>
 
-            <div v-else
+            <div
+v-else
                  class="p-8 text-center border-2 border-dashed border-neutral-200 dark:border-neutral-800 rounded-lg text-neutral-500">
               Vous n'avez pas encore de catégories personnelles.
             </div>
           </section>
 
-          <hr class="border-neutral-200 dark:border-neutral-800"/>
+          <hr class="border-neutral-200 dark:border-neutral-800">
 
           <section>
             <h2 class="text-xl font-semibold mb-4 text-neutral-500 dark:text-neutral-400">Catégories par défauts</h2>
 
             <div
                 class="shadow-sm rounded-lg border border-neutral-200 dark:border-neutral-700 divide-y divide-neutral-200 dark:divide-neutral-700 bg-neutral-50/50 dark:bg-neutral-800/20">
-              <div v-for="category in defaultCategories" :key="category.id"
+              <div
+v-for="category in defaultCategories" :key="category.id"
                    class="flex items-center justify-between p-4 opacity-80">
 
                 <div class="flex items-center gap-3">

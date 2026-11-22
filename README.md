@@ -1,6 +1,12 @@
 # AirGap - Vos finances ne regardent que vous.
 
+[![pipeline status](https://gitlab.com/Akahira/AirGap/badges/master/pipeline.svg)](https://gitlab.com/Akahira/AirGap/-/commits/master)
+
 Une application web open-source et complète pour gérer vos finances personnelles, développée avec NuxtJs, DrizzleORM, PostgreSQL.
+
+> **Dépôt officiel : [GitLab/Akahira/AirGap](https://gitlab.com/Akahira/AirGap).**
+> GitHub n'est conservé que comme archive historique. Les issues, merge requests
+> et pipelines se font exclusivement sur GitLab.
 
 ## 🚀 Fonctionnalités
 
@@ -26,21 +32,28 @@ Une application web open-source et complète pour gérer vos finances personnell
 
 ### Prérequis
 - Docker et Docker Compose
-- Node.js 18+ (pour le développement local)
+- Node.js 22+ (pour le développement local)
 - PostgreSQL 15+
 
 ### Installation Rapide avec Docker
 
 1. **Cloner le repository**
 ```bash
-git clone https://github.com/qldwin/airgap.git
-cd airgap
+git clone https://gitlab.com/Akahira/AirGap.git
+cd AirGap
 ```
 
 2. **Configurer les variables d'environnement**
 ```bash
 cp .env.example .env
 # Éditer .env avec vos configurations
+```
+
+⚠️ `NUXT_APP_SECRET` et `ENCRYPTION_KEY` doivent être générés avant le premier
+lancement. Les valeurs à zéro de `.env.example` sont refusées au démarrage :
+
+```bash
+openssl rand -base64 32
 ```
 
 3. **Lancer l'application avec Docker Compose**
@@ -61,7 +74,7 @@ npm install
 
 2. **Configurer la base de données**
 
-**Nécessite la variable DATABASE_URL dans .env**
+**Nécessite la variable NUXT_DATABASE_URL dans .env**
 
 ```bash
 npx drizzle-kit migrate
@@ -126,6 +139,69 @@ npx drizzle-kit migrate
 # Ouvrir le studio Drizzle
 npx drizzle-kit studio
 ```
+
+### Tests
+
+⚠️ Les tests d'intégration vident la base ciblée (`TRUNCATE`). Ils refusent de s'exécuter si le nom de la base ne finit pas par `_test`, `_preview` ou `_ci`.
+
+```bash
+# Créer une base dédiée
+createdb -h localhost -U <user> airgap_test
+
+# Appliquer les migrations puis lancer les tests
+NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" npx drizzle-kit migrate
+NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" npm test
+```
+
+La suite inclut des tests E2E HTTP (inscription, login, CRUD transactions/budgets/catégories, import, sécurité) exécutés avec `AI_ENABLED=false`. Pour ne lancer que les E2E :
+
+```bash
+NUXT_DATABASE_URL="postgresql://<user>:<password>@localhost:5432/airgap_test" npm run test:e2e
+```
+
+## 🚀 CI/CD GitLab
+
+Le pipeline GitLab (`.gitlab-ci.yml`) exécute :
+
+- lint, typecheck, audit et build ;
+- les tests avec PostgreSQL 18 ;
+- le build et la publication de l'image sur `master` et sur les tags ;
+- un déploiement **manuel** sur tag.
+
+Image publiée :
+
+- application : `registry.gitlab.com/akahira/airgap`
+
+En production, utiliser un tag exact, jamais `:latest` :
+
+```bash
+AIRGAP_IMAGE=registry.gitlab.com/akahira/airgap:v1.2.3 \
+  docker compose -f docker-compose.prod.yml up -d --no-deps airgap
+```
+
+### Variables CI/CD protégées
+
+| Variable | Description |
+|---|---|
+| `SSH_HOST` | Hôte du serveur de production |
+| `SSH_USER` | Utilisateur SSH avec accès à Docker |
+| `SSH_PORT` | Port SSH (optionnel, 22 par défaut) |
+| `SSH_PRIVATE_KEY` | Clé privée SSH, type **File** |
+| `PROD_DIR` | Répertoire du compose sur le serveur, ex. `/app` |
+
+Le serveur doit être authentifié auprès du registry avec un **deploy token**
+`read_registry` :
+
+```bash
+docker login registry.gitlab.com -u <deploy-token-user> --password-stdin
+```
+
+### Migration du service IA
+
+Le service `AirGap-AI` est déjà hébergé sur GitLab
+(`https://gitlab.com/Akahira/AirGap-AI`). Sa migration complète (CI, registry,
+réseau Docker interne) fera l'objet d'une MR dédiée, car elle dépend des
+artefacts du modèle qui ne sont pas encore versionnés.
 
 ## 🎯 Utilisation
 
@@ -203,9 +279,9 @@ Ce projet est sous licence AGPLv3. Voir le fichier LICENSE pour plus de détails
 ## 🆘 Support
 
 Pour toute question ou problème :
-- Ouvrez une issue sur GitHub
+- Ouvrez une issue sur GitLab : https://gitlab.com/Akahira/AirGap/-/issues
 - Consultez la documentation
-- Contactez l'équipe de support sur discord
+- Contactez l'équipe de support sur Discord
 
 ---
 
