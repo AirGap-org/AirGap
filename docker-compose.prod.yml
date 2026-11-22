@@ -44,6 +44,9 @@ services:
       db:
         condition: service_healthy
     env_file: ".env"
+    environment:
+      # L'IA reste sur le réseau interne : aucun libellé ne transite par Internet.
+      AIRGAP_AI_PREDICT_URL: "http://airgap-ai:8000/predire"
     cap_drop:
       - ALL
     security_opt:
@@ -59,24 +62,42 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - airgap_db_net
+      # Priorité haute : la passerelle par défaut (Internet, OAuth) reste airgap_db_net.
+      airgap_db_net:
+        priority: 100
+      airgap_ai_net:
+        priority: 10
 
-  # La migration de l'image et du réseau interne est traitée dans une MR dédiée.
   airgap-ai:
-    image: ghcr.io/airgap-org/airgap-ai:latest
+    # En production, toujours passer un tag exact :
+    #   AIRGAP_AI_IMAGE=registry.gitlab.com/akahira/airgap-ai:v1.2.3
+    image: ${AIRGAP_AI_IMAGE:-registry.gitlab.com/akahira/airgap-ai:latest}
     restart: always
-    ports:
-      - "127.0.0.1:8000:8000"
+    # Pas de port public : le service n'est joignable que par airgap_ai_net.
+    environment:
+      ENVIRONMENT: PRODUCTION
+      ALLOWED_HOSTS: 'airgap-ai,airgap-ai.aldwin-weber.fr'
     cap_drop:
       - ALL
     security_opt:
       - no-new-privileges:true
-    environment:
-      ALLOWED_HOSTS: 'airgap-ai.aldwin-weber.fr'
+    tmpfs:
+      - /tmp
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; s = socket.create_connection(('127.0.0.1', 8000), 2); s.close()"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 60s
+    networks:
+      - airgap_ai_net
 
 volumes:
   postgres_data:
 
 networks:
   airgap_db_net:
+  airgap_ai_net:
+    internal: true
   adminer_db_net:
