@@ -168,9 +168,10 @@ Le pipeline GitLab (`.gitlab-ci.yml`) exécute :
 - le build et la publication de l'image sur `master` et sur les tags ;
 - un déploiement **manuel** sur tag.
 
-Image publiée :
+Images publiées :
 
 - application : `registry.gitlab.com/akahira/airgap`
+- service IA : `registry.gitlab.com/akahira/airgap-ai`
 
 En production, utiliser un tag exact, jamais `:latest` :
 
@@ -196,12 +197,23 @@ Le serveur doit être authentifié auprès du registry avec un **deploy token**
 docker login registry.gitlab.com -u <deploy-token-user> --password-stdin
 ```
 
-### Migration du service IA
+### Service IA interne
 
-Le service `AirGap-AI` est déjà hébergé sur GitLab
-(`https://gitlab.com/Akahira/AirGap-AI`). Sa migration complète (CI, registry,
-réseau Docker interne) fera l'objet d'une MR dédiée, car elle dépend des
-artefacts du modèle qui ne sont pas encore versionnés.
+Le service `AirGap-AI` est hébergé sur GitLab
+(`https://gitlab.com/Akahira/AirGap-AI`) et publié dans le registry GitLab.
+
+Il n'expose plus de port public : il est joignable uniquement par le réseau
+Docker `airgap_ai_net`, et l'application utilise :
+
+```env
+AIRGAP_AI_PREDICT_URL=http://airgap-ai:8000/predire
+```
+
+Cela évite que les libellés de transactions transitent par Internet.
+
+⚠️ Ordre de déploiement : publier d'abord une image `airgap-ai` taguée, puis
+déployer l'application avec `AIRGAP_AI_IMAGE` pointant vers ce tag. Sans cela,
+l'application ne pourra pas joindre l'IA.
 
 ## 🎯 Utilisation
 
