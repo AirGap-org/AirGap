@@ -161,6 +161,7 @@ sync-compose:
     url: https://airgap.aldwin-weber.fr
   resource_group: production
   script:
+    - ssh -i "$SSH_PRIVATE_KEY" -p "${SSH_PORT:-22}" -o IdentitiesOnly=yes "$SSH_USER@$SSH_HOST" "if [ -f '$PROD_DIR/docker-compose.prod.yml' ]; then cp '$PROD_DIR/docker-compose.prod.yml' '$PROD_DIR/docker-compose.prod.yml.bak-\$(date +%Y%m%d-%H%M%S)'; fi"
     - scp -i "$SSH_PRIVATE_KEY" -P "${SSH_PORT:-22}" -o IdentitiesOnly=yes docker-compose.prod.yml "$SSH_USER@$SSH_HOST:$PROD_DIR/docker-compose.prod.yml"
     - ssh -i "$SSH_PRIVATE_KEY" -p "${SSH_PORT:-22}" -o IdentitiesOnly=yes "$SSH_USER@$SSH_HOST" "grep -q 'airgap_ai_net' '$PROD_DIR/docker-compose.prod.yml'"
   rules:
