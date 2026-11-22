@@ -62,12 +62,22 @@ Le pipeline GitLab exécute :
 - lint, typecheck, audit et build ;
 - tests avec PostgreSQL ;
 - build de l'image Docker sur `master` et sur les tags ;
-- déploiement **manuel** sur tag.
+- `sync-compose`, backup PostgreSQL et déploiement **manuel** sur tag.
 
 Les images de production sont publiées dans le registry GitLab :
 
 - `registry.gitlab.com/akahira/airgap`
 - `registry.gitlab.com/akahira/airgap-ai`
+
+Ordre de déploiement d'un tag :
+
+1. `sync-compose` dans `AirGap` ;
+2. `deploy-production` dans `AirGap-AI` ;
+3. `deploy-production` dans `AirGap`.
+
+Chaque job se connecte au registry avec son propre `CI_JOB_TOKEN`. Les variables
+SSH (`SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SSH_PRIVATE_KEY`, `PROD_DIR`) doivent
+être définies et protégées dans les deux projets.
 
 ## Sécurité
 

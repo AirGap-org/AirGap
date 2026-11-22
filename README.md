@@ -166,26 +166,28 @@ Le pipeline GitLab (`.gitlab-ci.yml`) exécute :
 - lint, typecheck, audit et build ;
 - les tests avec PostgreSQL 18 ;
 - le build et la publication de l'image sur `master` et sur les tags ;
-- un déploiement **manuel** sur tag.
+- un `sync-compose` manuel, un backup PostgreSQL et un déploiement **manuel** sur tag.
 
 Images publiées :
 
 - application : `registry.gitlab.com/akahira/airgap`
 - service IA : `registry.gitlab.com/akahira/airgap-ai`
 
-En production, utiliser un tag exact, jamais `:latest` :
+En production, utiliser un tag exact, jamais `:latest`.
 
-```bash
-# Service IA (à déployer en premier)
-AIRGAP_AI_IMAGE=registry.gitlab.com/akahira/airgap-ai:v1.2.3 \
-  docker compose -f docker-compose.prod.yml up -d --no-deps airgap-ai
+### Ordre de déploiement d'un tag
 
-# Application
-AIRGAP_IMAGE=registry.gitlab.com/akahira/airgap:v1.2.3 \
-  docker compose -f docker-compose.prod.yml up -d --no-deps airgap
-```
+1. **`sync-compose`** dans le projet `AirGap` : copie le compose sur le serveur.
+2. **`deploy-production`** dans le projet `AirGap-AI` : déploie l'IA et vérifie son healthcheck.
+3. **`deploy-production`** dans le projet `AirGap` : sauvegarde PostgreSQL, déploie l'application et vérifie `/api/health`.
+
+Le job `deploy-production` de l'application est bloqué tant que `sync-compose`
+n'a pas été lancé.
 
 ### Variables CI/CD protégées
+
+Les mêmes variables sont à définir dans **les deux projets GitLab**
+(`AirGap` et `AirGap-AI`) :
 
 | Variable | Description |
 |---|---|
@@ -195,12 +197,9 @@ AIRGAP_IMAGE=registry.gitlab.com/akahira/airgap:v1.2.3 \
 | `SSH_PRIVATE_KEY` | Clé privée SSH, type **File** |
 | `PROD_DIR` | Répertoire du compose sur le serveur, ex. `/app` |
 
-Le serveur doit être authentifié auprès du registry avec un **deploy token**
-`read_registry` :
-
-```bash
-docker login registry.gitlab.com -u <deploy-token-user> --password-stdin
-```
+Chaque job de déploiement se connecte au registry avec son propre
+`CI_JOB_TOKEN`, via SSH et `--password-stdin`. Aucun token de registry n'est
+stocké durablement sur le serveur.
 
 ### Service IA interne
 
@@ -216,9 +215,10 @@ AIRGAP_AI_PREDICT_URL=http://airgap-ai:8000/predire
 
 Cela évite que les libellés de transactions transitent par Internet.
 
-⚠️ Ordre de déploiement : publier d'abord une image `airgap-ai` taguée, puis
-déployer l'application avec `AIRGAP_AI_IMAGE` pointant vers ce tag. Sans cela,
-l'application ne pourra pas joindre l'IA.
+⚠️ L'IA doit être déployée après `sync-compose` et avant l'application, avec
+`AIRGAP_AI_IMAGE` pointant vers un tag publié. Le job `deploy-production`
+d'`AirGap-AI` vérifie que le compose contient bien `airgap_ai_net` avant de
+démarrer.
 
 ## 🎯 Utilisation
 
