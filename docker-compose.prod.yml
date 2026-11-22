@@ -62,8 +62,11 @@ services:
       retries: 3
       start_period: 30s
     networks:
-      - airgap_db_net
-      - airgap_ai_net
+      # Priorité haute : la passerelle par défaut (Internet, OAuth) reste airgap_db_net.
+      airgap_db_net:
+        priority: 100
+      airgap_ai_net:
+        priority: 10
 
   airgap-ai:
     # En production, toujours passer un tag exact :
