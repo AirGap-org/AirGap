@@ -184,8 +184,9 @@ deploy-production:
 
       ai_container=$(docker compose -f docker-compose.prod.yml ps -q airgap-ai)
       ai_status=$(docker inspect --format '{{.State.Health.Status}}' "$ai_container" 2>/dev/null || echo missing)
-      if [ "$ai_status" != "healthy" ]; then
-        echo "AirGap-AI n'est pas healthy. Lancez d'abord deploy-production dans AirGap-AI." >&2
+      ai_networks=$(docker inspect --format '{{json .NetworkSettings.Networks}}' "$ai_container" 2>/dev/null || echo '{}')
+      if [ "$ai_status" != "healthy" ] || ! printf '%s' "$ai_networks" | grep -q 'airgap_ai_net'; then
+        echo "AirGap-AI n'est pas healthy sur airgap_ai_net. Lancez d'abord deploy-production dans AirGap-AI." >&2
         exit 1
       fi
 
