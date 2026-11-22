@@ -79,6 +79,9 @@ Chaque job se connecte au registry avec son propre `CI_JOB_TOKEN`. Les variables
 SSH (`SSH_HOST`, `SSH_USER`, `SSH_PORT`, `SSH_PRIVATE_KEY`, `PROD_DIR`) doivent
 être définies et protégées dans les deux projets.
 
+Le port 3000 est contrôlé par `AIRGAP_BIND_ADDR` : `127.0.0.1` derrière un proxy
+local, `0.0.0.0` si Cloudflare atteint directement l'IP publique.
+
 ## Sécurité
 
 - Ne jamais commiter de secret, clé privée, token ou fichier `.env`.

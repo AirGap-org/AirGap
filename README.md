@@ -201,6 +201,16 @@ Chaque job de déploiement se connecte au registry avec son propre
 `CI_JOB_TOKEN`, via SSH et `--password-stdin`. Aucun token de registry n'est
 stocké durablement sur le serveur.
 
+### Exposition HTTP
+
+`AIRGAP_BIND_ADDR` contrôle l'interface d'écoute du port 3000 :
+
+- `127.0.0.1` (défaut) derrière un reverse proxy local ;
+- `0.0.0.0` si Cloudflare atteint directement l'IP publique du serveur.
+
+Dans ce second cas, restreindre le port 3000 aux plages d'IP Cloudflare au
+niveau du firewall, sinon le port est accessible en contournement du proxy.
+
 ### Service IA interne
 
 Le service `AirGap-AI` est hébergé sur GitLab
