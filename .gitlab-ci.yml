@@ -1,0 +1,172 @@
+# Pipeline GitLab CI/CD — AirGap
+#
+# Variables à définir dans Settings > CI/CD > Variables (protected) :
+#   SSH_HOST          : hôte du serveur de production
+#   SSH_USER          : utilisateur SSH disposant de Docker
+#   SSH_PORT          : port SSH (optionnel, 22 par défaut)
+#   SSH_PRIVATE_KEY   : clé privée SSH, type "File"
+#   PROD_DIR          : répertoire du docker-compose.prod.yml sur le serveur (ex: /app)
+#
+# Le serveur doit être connecté une fois au registry GitLab avec un deploy token
+# read_registry (Settings > Repository > Deploy tokens) :
+#   docker login registry.gitlab.com -u <user> --password-stdin
+#
+# La production utilise toujours un tag de version, jamais :latest ni :master.
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+stages:
+  - quality
+  - test
+  - build
+  - deploy
+
+variables:
+  NPM_CONFIG_CACHE: "$CI_PROJECT_DIR/.npm"
+  NUXT_TELEMETRY_DISABLED: "1"
+  # Valeurs de test uniquement, jamais utilisées en production.
+  NUXT_APP_SECRET: "fedcba9876543210fedcba9876543210"
+  ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
+  AI_ENABLED: "false"
+
+.node_job: &node_job
+  image: node:22-bookworm
+  interruptible: true
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - .npm/
+
+quality:
+  <<: *node_job
+  stage: quality
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npm run lint
+    - npm run typecheck
+    - npm audit --audit-level=high
+    - npm run build
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+test:
+  <<: *node_job
+  stage: test
+  services:
+    - name: postgres:18
+      alias: postgres
+  variables:
+    POSTGRES_DB: airgap_test
+    POSTGRES_USER: airgap
+    POSTGRES_PASSWORD: airgap_test_password
+    NUXT_DATABASE_URL: "postgresql://airgap:airgap_test_password@postgres:5432/airgap_test"
+  script:
+    - npm ci --cache .npm --prefer-offline
+    - npx drizzle-kit migrate
+    - npm test
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+.docker_defaults: &docker_defaults
+  image: docker:27
+  services:
+    - name: docker:27-dind
+      alias: docker
+  variables:
+    DOCKER_HOST: tcp://docker:2375
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_DRIVER: overlay2
+  interruptible: true
+
+# Valide le Dockerfile sur les MR sans publier d'image.
+docker-build:
+  <<: *docker_defaults
+  stage: build
+  script:
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:mr-$CI_PIPELINE_IID" .
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Publie l'image sur master et sur les tags.
+build-image:
+  <<: *docker_defaults
+  stage: build
+  before_script:
+    - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+  script:
+    - |
+      set -eu
+      TAG="${CI_COMMIT_TAG:-$CI_COMMIT_SHORT_SHA}"
+      docker build --pull \
+        -t "$CI_REGISTRY_IMAGE:$TAG" \
+        -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" \
+        .
+      docker push "$CI_REGISTRY_IMAGE:$TAG"
+      docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA"
+
+      if [ -n "${CI_COMMIT_TAG:-}" ]; then
+        docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE:latest"
+        docker push "$CI_REGISTRY_IMAGE:latest"
+      fi
+
+      if [ "${CI_COMMIT_BRANCH:-}" = "$CI_DEFAULT_BRANCH" ]; then
+        docker tag "$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA" "$CI_REGISTRY_IMAGE:edge"
+        docker push "$CI_REGISTRY_IMAGE:edge"
+      fi
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Déploiement manuel sur tag uniquement. Aucun déploiement automatique sur master.
+deploy-production:
+  stage: deploy
+  image: alpine:3.20
+  needs:
+    - build-image
+  environment:
+    name: production
+    url: https://airgap.aldwin-weber.fr
+  resource_group: production
+  variables:
+    GIT_STRATEGY: none
+  before_script:
+    - apk add --no-cache openssh-client
+    - eval "$(ssh-agent -s)"
+    - chmod 600 "$SSH_PRIVATE_KEY"
+    - ssh-add "$SSH_PRIVATE_KEY"
+    - mkdir -p ~/.ssh
+    - ssh-keyscan -p "${SSH_PORT:-22}" "$SSH_HOST" >> ~/.ssh/known_hosts
+  script:
+    - |
+      set -eu
+      ssh -p "${SSH_PORT:-22}" "$SSH_USER@$SSH_HOST" "
+        set -eu
+        cd '$PROD_DIR'
+        AIRGAP_IMAGE='$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG' docker compose -f docker-compose.prod.yml pull airgap
+        AIRGAP_IMAGE='$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG' docker compose -f docker-compose.prod.yml up -d --no-deps airgap
+
+        for i in \$(seq 1 45); do
+          container=\$(docker compose -f docker-compose.prod.yml ps -q airgap)
+          status=\$(docker inspect --format '{{.State.Health.Status}}' \"\$container\" 2>/dev/null || echo starting)
+          if [ \"\$status\" = \"healthy\" ]; then
+            exit 0
+          fi
+          sleep 2
+        done
+
+        docker compose -f docker-compose.prod.yml logs --tail=50 airgap
+        exit 1
+      "
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual
