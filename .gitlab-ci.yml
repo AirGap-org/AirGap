@@ -179,13 +179,14 @@ deploy-production:
       ssh -i "$SSH_PRIVATE_KEY" -p "${SSH_PORT:-22}" -o IdentitiesOnly=yes \
         "$SSH_USER@$SSH_HOST" \
         "PROD_DIR='$PROD_DIR' IMAGE='$CI_REGISTRY_IMAGE:$CI_COMMIT_TAG' bash -s" <<'REMOTE'
-      set -eu
+      set -euo pipefail
       cd "$PROD_DIR"
 
       mkdir -p backups
       backup="backups/airgap-$(date +%Y%m%d-%H%M%S).sql.gz"
       docker compose -f docker-compose.prod.yml exec -T db sh -c 'pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB"' | gzip > "$backup"
       test -s "$backup"
+      gzip -t "$backup"
       echo "Backup: $backup"
 
       AIRGAP_IMAGE="$IMAGE" docker compose -f docker-compose.prod.yml pull airgap
