@@ -65,6 +65,29 @@ v-model="form.type"
             </RadioGroup>
           </Field>
           <Field class="mb-3">
+            <FieldLabel for="account" class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              Compte
+            </FieldLabel>
+            <Select v-model="form.accountId">
+              <SelectTrigger id="account" class="w-full" required>
+                <SelectValue placeholder="Sélectionnez un compte"/>
+              </SelectTrigger>
+              <SelectContent class="dark:bg-neutral-700 bg-white">
+                <SelectItem
+v-for="account in activeAccounts"
+                            :key="account.id"
+                            :value="account.id"
+                            class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer">
+                  {{ account.accountName }} — {{ formatCurrency(account.currentBalance) }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="activeAccounts.length === 0" class="text-xs text-red-500 mt-1">
+              Créez d’abord un compte dans “Comptes”.
+            </p>
+          </Field>
+
+          <Field class="mb-3">
             <FieldLabel
 for="category"
                         class="block text-sm font-medium text-neutral-700 dark:text-neutral-300">Catégorie
@@ -158,6 +181,7 @@ const emits = defineEmits(['update:modelValue', 'transaction-added', 'transactio
 const isLoading = ref(false);
 const isLoadingCategories = ref(true);
 const allCategories = ref([]);
+const allAccounts = ref([]);
 const isOpen = computed({
   get: () => props.modelValue,
   set: (value) => emits('update:modelValue', value)
@@ -168,6 +192,7 @@ const form = ref({
   description: '',
   amount: '',
   type: '',
+  accountId: null,
   categoryId: null,
   date: undefined,
 });
@@ -176,14 +201,29 @@ const form = ref({
 onMounted(async () => {
   try {
     isLoadingCategories.value = true;
-    const response = await $fetch('/api/categories');
-    allCategories.value = response.categories || [];
+    const [categoriesResponse, accountsResponse] = await Promise.all([
+      $fetch('/api/categories'),
+      $fetch('/api/accounts')
+    ]);
+    allCategories.value = categoriesResponse.categories || [];
+    allAccounts.value = accountsResponse.accounts || [];
+    if (!form.value.accountId) {
+      const defaultAccount = allAccounts.value.find((account) => !account.isArchived);
+      form.value.accountId = defaultAccount?.id ?? null;
+    }
   } catch (e) {
-    console.error("Erreur lors du chargement des catégories:", e);
+    console.error("Erreur lors du chargement des catégories/comptes:", e);
   } finally {
     isLoadingCategories.value = false;
   }
 });
+
+const activeAccounts = computed(() => allAccounts.value.filter((account) => !account.isArchived));
+
+const formatCurrency = (value) => new Intl.NumberFormat('fr-FR', {
+  style: 'currency',
+  currency: 'EUR'
+}).format(Number(value) || 0);
 
 // --- COMPUTED : FILTRAGE ---
 const filteredCategories = computed(() => {
@@ -219,6 +259,7 @@ watch(
           description: newTransaction.description,
           amount: newTransaction.amount,
           type: formType,
+          accountId: newTransaction.accountId || null,
           categoryId: newTransaction.categoryId || null,
           date: formattedDate
         };
@@ -232,6 +273,11 @@ const submitForm = async () => {
 
   if (!form.value.date) {
     alert("Attention la date n'est pas sélectionnée.");
+    return;
+  }
+
+  if (!form.value.accountId) {
+    alert("Attention le compte n'est pas sélectionné.");
     return;
   }
 
@@ -256,7 +302,7 @@ const submitForm = async () => {
       date: form.value.date ? form.value.date.toString() : undefined,
       typeTransaction: typeFormat,
       categoryId: form.value.categoryId,
-      accountId: null
+      accountId: form.value.accountId
     };
 
     let response;

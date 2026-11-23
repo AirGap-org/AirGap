@@ -8,7 +8,7 @@
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div
             class="card p-4 rounded-lg shadow-xl border border-neutral-200 dark:border-neutral-750">
-          <h3 class="text-lg font-medium mb-1">Solde total</h3>
+          <h3 class="text-lg font-medium mb-1">Patrimoine total</h3>
           <div v-if="loading" class="h-8 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"/>
           <p v-else class="text-3xl font-bold text-primary-550">{{ formatCurrency(balance) }}</p>
 
@@ -48,6 +48,17 @@
         </div>
       </div>
 
+      <div v-if="!loading && accounts.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        <div
+            v-for="account in accounts"
+            :key="account.id"
+            class="card p-4 rounded-lg border border-neutral-200 dark:border-neutral-750 shadow-sm"
+        >
+          <p class="text-sm text-neutral-500 truncate">{{ account.name }}</p>
+          <p class="text-xl font-bold text-neutral-900 dark:text-neutral-50">{{ formatCurrency(account.currentBalance) }}</p>
+        </div>
+      </div>
+
       <div v-if="loading" class="flex justify-center py-12">
         <div class="animate-spin rounded-lg h-12 w-12 border-t-2 border-b-2 border-primary-600"/>
       </div>
@@ -79,7 +90,8 @@ const { data: dashboard, pending: loading } = useAsyncData(
     }
 );
 
-const balance = computed(() => dashboard.value?.totals.balance ?? 0)
+const balance = computed(() => dashboard.value?.netWorth ?? 0)
+const accounts = computed(() => dashboard.value?.accounts ?? [])
 const monthlyIncome = computed(() => dashboard.value?.currentMonth.income ?? 0)
 const monthlyExpense = computed(() => dashboard.value?.currentMonth.expense ?? 0)
 const prevIncome = computed(() => dashboard.value?.previousMonth.income ?? 0)

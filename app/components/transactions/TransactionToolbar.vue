@@ -26,6 +26,24 @@
 
     <div class="h-6 w-[1px] bg-neutral-200 dark:bg-neutral-800 mx-1"/>
 
+    <div class="hidden md:block min-w-[180px]">
+      <Select :model-value="selectedAccountId" @update:model-value="$emit('update:selectedAccountId', $event)">
+        <SelectTrigger class="w-full">
+          <SelectValue placeholder="Compte d'import" />
+        </SelectTrigger>
+        <SelectContent class="bg-white dark:bg-neutral-900">
+          <SelectItem
+              v-for="account in accounts.filter((item) => !item.isArchived)"
+              :key="account.id"
+              :value="account.id"
+              class="cursor-pointer"
+          >
+            {{ account.accountName }}
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+
     <input
         ref="fileInput"
         type="file"
@@ -55,6 +73,7 @@
 
 <script setup>
 import { ref } from 'vue'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '~/components/ui/select'
 import { ArrowUpFromLine, PlusIcon, Search, Sparkles } from 'lucide-vue-next'
 
 defineProps({
@@ -69,10 +88,18 @@ defineProps({
   isPredicting: {
     type: Boolean,
     default: false
+  },
+  accounts: {
+    type: Array,
+    default: () => []
+  },
+  selectedAccountId: {
+    type: String,
+    default: ''
   }
 })
 
-const emit = defineEmits(['update:searchQuery', 'file-selected', 'create', 'predict-all'])
+const emit = defineEmits(['update:searchQuery', 'update:selectedAccountId', 'file-selected', 'create', 'predict-all'])
 const fileInput = ref(null)
 
 const onFileSelected = (event) => {

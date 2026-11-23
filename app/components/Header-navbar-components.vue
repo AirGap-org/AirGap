@@ -21,6 +21,9 @@
               <NuxtLink to="/budget">Budgets</NuxtLink>
             </Button>
             <Button class="nav-link" active-class="nav-link-active">
+              <NuxtLink to="/accounts">Comptes</NuxtLink>
+            </Button>
+            <Button class="nav-link" active-class="nav-link-active">
               <NuxtLink to="/settings">Paramètres</NuxtLink>
             </Button>
           </nav>
@@ -108,6 +111,14 @@ v-if="isDropdownOpen"
           <span class="text-[10px] uppercase tracking-wider">Budgets</span>
         </NuxtLink>
         <NuxtLink
+            to="/accounts"
+            class="flex flex-col items-center justify-center w-full h-full text-neutral-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            active-class="text-primary-600 dark:text-primary-400 font-medium"
+        >
+          <Wallet class="w-5 h-5 mb-1"/>
+          <span class="text-[10px] uppercase tracking-wider">Comptes</span>
+        </NuxtLink>
+        <NuxtLink
             to="/profile"
             class="flex flex-col items-center justify-center w-full h-full text-neutral-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             active-class="text-primary-600 dark:text-primary-400 font-medium"
@@ -122,7 +133,7 @@ v-if="isDropdownOpen"
 
 <script setup>
 import {ref, watch, onMounted, onUnmounted} from 'vue';
-import {Home, ArrowRightLeft, PieChart, User, Sun, Moon} from 'lucide-vue-next'
+import {Home, ArrowRightLeft, PieChart, User, Sun, Moon, Wallet} from 'lucide-vue-next'
 import { Button } from '~/components/ui/button';
 
 const {loggedIn, user, clear: clearSession} = useUserSession();

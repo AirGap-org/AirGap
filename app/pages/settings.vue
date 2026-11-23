@@ -5,6 +5,26 @@
         <h1 class="text-3xl font-bold text-neutral-900 dark:text-neutral-50">Paramètres</h1>
       </div>
       <div>
+        <!-- Gestion des comptes -->
+        <Item variant="outline" class="border-neutral-750 shadow-xl">
+          <ItemContent class="flex flex-row w-full items-center justify-between">
+            <div>
+              <ItemTitle>Gestion des comptes</ItemTitle>
+              <ItemDescription>Ajoutez, modifiez ou archivez vos comptes bancaires.</ItemDescription>
+            </div>
+            <div>
+              <ItemActions class="flex-row-reverse">
+                <Button
+variant="outline" size="sm" class="cursor-pointer text-white border-neutral-200 dark:border-neutral-750 bg-primary-700 hover:bg-primary-500"
+                        @click="() => navigateTo('/accounts')"
+                >
+                  Gérer les comptes
+                </Button>
+              </ItemActions>
+            </div>
+          </ItemContent>
+        </Item>
+
         <!-- Gestion des catégories -->
         <Item variant="outline" class="border-neutral-750 shadow-xl">
           <ItemContent class="flex flex-row w-full items-center justify-between">

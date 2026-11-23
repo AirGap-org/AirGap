@@ -14,6 +14,7 @@
           <TableRow class="border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-750">
             <TableHead class="text-left py-3 px-4 text-neutral-700 dark:text-neutral-300 text-xs uppercase tracking-wider font-semibold">Date</TableHead>
             <TableHead class="text-left py-3 px-4 text-neutral-700 dark:text-neutral-300 text-xs uppercase tracking-wider font-semibold">Description</TableHead>
+            <TableHead class="text-left py-3 px-4 text-neutral-700 dark:text-neutral-300 text-xs uppercase tracking-wider font-semibold">Compte</TableHead>
             <TableHead class="text-right py-3 px-4 text-neutral-700 dark:text-neutral-300 text-xs uppercase tracking-wider font-semibold">Montant</TableHead>
             <TableHead class="text-right py-3 px-4 text-neutral-700 dark:text-neutral-300 text-xs uppercase tracking-wider font-semibold">Actions</TableHead>
           </TableRow>
@@ -34,6 +35,9 @@
                   {{ transaction.category }}
                 </span>
               </div>
+            </TableCell>
+            <TableCell class="py-3 px-4 text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap">
+              {{ transaction.accountName || '—' }}
             </TableCell>
             <TableCell
                 class="py-3 px-4 text-sm text-right font-medium whitespace-nowrap"

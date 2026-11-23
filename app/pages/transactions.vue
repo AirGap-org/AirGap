@@ -10,6 +10,9 @@
             v-model:search-query="searchQuery"
             :is-parsing="isParsing"
             :is-predicting="isPredictingAll"
+            :accounts="accounts"
+            :selected-account-id="selectedAccountId"
+            @update:selected-account-id="selectedAccountId = $event"
             @file-selected="handleFileUpload"
             @create="openTransactionModal"
             @predict-all="predictAllTransactions"
@@ -70,15 +73,28 @@ const isParsing = ref(false);
 const isPredictingAll = ref(false);
 
 const transactions = ref([]);
+const accounts = ref([]);
+const selectedAccountId = ref('');
 const loading = ref(true);
 const showTransactionModal = ref(false);
 const selectedTransaction = ref(null);
 
 // --- CHARGEMENT DONNÉES ---
+const loadAccounts = async () => {
+  const response = await $fetch('/api/accounts');
+  accounts.value = response.accounts || [];
+  if (!selectedAccountId.value) {
+    selectedAccountId.value = accounts.value.find((account) => !account.isArchived)?.id || '';
+  }
+};
+
 const loadTransactions = async () => {
   try {
     loading.value = true;
-    const response = await $fetch('/api/transactions');
+    const [response] = await Promise.all([
+      $fetch('/api/transactions'),
+      loadAccounts()
+    ]);
     transactions.value = (response.transactions || []).map(t => ({
       ...t,
       category: t.category?.name || '',
@@ -125,7 +141,7 @@ const transformCSVRow = (row) => {
     date: cleanDate,
     description: descKey ? (row[descKey] || 'Import CSV') : 'Import CSV',
     amount: cleanAmount,
-    accountId: null,
+    accountId: selectedAccountId.value || null,
     selectedCategoryId: null,
     status: 'missing_category'
   };
@@ -152,6 +168,11 @@ const parseCSV = (file) => {
  */
 const handleFileUpload = async (file) => {
   if (!file) return;
+
+  if (!selectedAccountId.value) {
+    alert('Sélectionnez un compte avant d’importer un CSV.');
+    return;
+  }
 
   isParsing.value = true;
 

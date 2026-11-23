@@ -48,6 +48,29 @@ for="amount"
           </Field>
 
           <Field>
+            <FieldLabel for="account" class="text-neutral-700 dark:text-neutral-300">
+              Compte
+            </FieldLabel>
+            <Select v-model="form.accountId">
+              <SelectTrigger id="account" class="w-full mb-2" required>
+                <SelectValue placeholder="Sélectionnez un compte"/>
+              </SelectTrigger>
+              <SelectContent class="dark:bg-neutral-700 bg-white">
+                <SelectItem
+v-for="account in availableAccounts"
+                            :key="account.id"
+                            :value="account.id"
+                            class="hover:dark:bg-neutral-800 hover:bg-neutral-400 cursor-pointer">
+                  {{ account.accountName }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <p v-if="availableAccounts.length === 0" class="text-xs text-red-500 mt-1">
+              Créez d’abord un compte dans “Comptes”.
+            </p>
+          </Field>
+
+          <Field>
             <FieldLabel for="category" class="text-neutral-700 dark:text-neutral-300">
               Catégorie à suivre
             </FieldLabel>
@@ -135,6 +158,7 @@ const emits = defineEmits(['update:modelValue', 'budget-added', 'budget-updated'
 const isLoading = ref(false);
 const isLoadingCategories = ref(true);
 const allCategories = ref([]);
+const allAccounts = ref([]);
 
 const isOpen = computed({
   get: () => props.modelValue,
@@ -145,6 +169,7 @@ const isEditing = computed(() => !!props.budget);
 const form = ref({
   name: '',
   amount: '',
+  accountId: '',
   categoryId: '',
   periodType: 'monthly'
 });
@@ -153,14 +178,26 @@ const form = ref({
 onMounted(async () => {
   try {
     isLoadingCategories.value = true;
-    const response = await $fetch('/api/categories');
-    allCategories.value = response.categories || response || [];
+    const [categoriesResponse, accountsResponse] = await Promise.all([
+      $fetch('/api/categories'),
+      $fetch('/api/accounts')
+    ]);
+    allCategories.value = categoriesResponse.categories || categoriesResponse || [];
+    allAccounts.value = accountsResponse.accounts || [];
+    if (!form.value.accountId) {
+      const defaultAccount = allAccounts.value.find((account) => !account.isArchived);
+      form.value.accountId = defaultAccount?.id ?? '';
+    }
   } catch (e) {
-    console.error("Erreur chargement catégories:", e);
+    console.error("Erreur chargement catégories/comptes:", e);
   } finally {
     isLoadingCategories.value = false;
   }
 });
+
+const availableAccounts = computed(() => allAccounts.value.filter((account) =>
+    !account.isArchived || account.id === form.value.accountId
+));
 
 // --- COMPUTED : CATÉGORIES DÉPENSES ---
 const expenseCategories = computed(() => {
@@ -183,11 +220,12 @@ watch(
         form.value = {
           name: newBudget.name,
           amount: Number(newBudget.amount),
+          accountId: newBudget.accountId || '',
           categoryId: newBudget.categories && newBudget.categories.length > 0 ? newBudget.categories[0].id.toString() : '',
           periodType: detectedPeriod
         };
       } else {
-        form.value = {name: '', amount: '', categoryId: '', periodType: 'monthly'};
+        form.value = {name: '', amount: '', accountId: allAccounts.value.find((account) => !account.isArchived)?.id ?? '', categoryId: '', periodType: 'monthly'};
       }
     },
     {immediate: true}
@@ -195,6 +233,11 @@ watch(
 
 // --- SUBMIT ---
 const submitForm = async () => {
+
+  if (!form.value.accountId) {
+    alert("Attention le compte n'est pas sélectionné.");
+    return;
+  }
 
   if (!form.value.categoryId) {
     alert("Attention la catégorie n'est pas sélectionnée.");
@@ -217,6 +260,7 @@ const submitForm = async () => {
     const payload = {
       name: form.value.name,
       amount: Number(form.value.amount),
+      accountId: form.value.accountId,
       categoryIds: form.value.categoryId ? [form.value.categoryId] : [],
       startDate: startDate,
       endDate: endDate

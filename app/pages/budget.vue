@@ -131,9 +131,10 @@ const getBudgetSpent = (budget) => {
   const relevantTransactions = transactions.value.filter(t => {
     const isExpense = t.typeTransaction === 'depense';
     const isCorrectCategory = budgetCatIds.has(t.categoryId);
+    const isCorrectAccount = t.accountId === budget.accountId;
     const tDate = new Date(t.date);
     const isInDateRange = tDate >= start && tDate <= end;
-    return isExpense && isCorrectCategory && isInDateRange;
+    return isExpense && isCorrectCategory && isCorrectAccount && isInDateRange;
   });
 
   return relevantTransactions.reduce((sum, t) => sum + Number(t.amount), 0);

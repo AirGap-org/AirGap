@@ -23,6 +23,8 @@
         <span v-else class="font-medium italic">Aucune</span>
       </span>
       <span class="mx-2 hidden sm:inline">•</span>
+      <span>Compte: <span class="font-medium">{{ budget.accountName || '—' }}</span></span>
+      <span class="mx-2 hidden sm:inline">•</span>
       <span>Période: <span class="font-medium">{{ formatDateRange(budget.startDate, budget.endDate) }}</span></span>
     </div>
 
