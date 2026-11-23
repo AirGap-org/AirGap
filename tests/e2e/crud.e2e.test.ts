@@ -1,6 +1,8 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { setup, fetch, url } from '@nuxt/test-utils/e2e'
 import { eq } from 'drizzle-orm'
+import { Hash } from '@adonisjs/hash'
+import { Scrypt } from '@adonisjs/hash/drivers/scrypt'
 import { db } from '#server/db'
 import { accounts, assoTransactionsCategories, transactions, users } from '~~/drizzle/schema'
 import { resetDb } from '../helpers/db'
@@ -384,5 +386,37 @@ describe('E2E CRUD', () => {
         expect((await alice.json('/api/calendar?year=2026&month=11')).status).toBe(200)
         expect((await alice.json('/api/calendar?year=2026&month=13')).status).toBe(400)
         expect((await alice.json('/api/calendar?year=2026&quarter=5')).status).toBe(400)
+    })
+
+    it('connecte un ancien compte scrypt et migre le hash vers bcrypt', async () => {
+        const legacyEmail = `legacy-${suffix}@example.com`
+        const legacyPassword = 'ancien-mot-de-passe-e2e'
+        const hasher = new Hash(new Scrypt({}))
+        const legacyHash = await hasher.make(legacyPassword)
+
+        const [legacyUser] = await db.insert(users).values({
+            email: legacyEmail,
+            name: 'Legacy E2E',
+            password: legacyHash,
+            authProvider: 'local'
+        }).returning()
+
+        expect(legacyUser?.id).toBeTruthy()
+        expect(legacyUser?.password?.startsWith('$scrypt$')).toBe(true)
+
+        const client = new ApiClient()
+        const login = await client.post('/api/auth/login', {
+            email: legacyEmail,
+            password: legacyPassword
+        })
+        expect(login.status).toBe(200)
+        expect((await client.json('/api/user')).status).toBe(200)
+
+        const [stored] = await db.select({ password: users.password })
+            .from(users)
+            .where(eq(users.id, legacyUser!.id))
+
+        expect(stored?.password?.startsWith('$2')).toBe(true)
+        expect(stored?.password?.startsWith('$scrypt$')).toBe(false)
     })
 })

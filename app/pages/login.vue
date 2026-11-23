@@ -127,8 +127,8 @@ async function handleLogin() {
         await refreshSession()
         await navigateTo('/')
       })
-      .catch(() => {
-        errorMessage.value = 'Email ou mot de passe incorrect'
+      .catch((error) => {
+        errorMessage.value = error?.data?.message || 'Email ou mot de passe incorrect'
       })
 }
 </script>

@@ -24,6 +24,7 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@adonisjs/hash": "9.1.1",
     "@nuxt/ui": "^4.6.0",
     "@oslojs/encoding": "^1.1.0",
     "@oslojs/otp": "^1.1.0",
