@@ -67,6 +67,20 @@ export const updateUserPassword = async (userId: string, newHashedPassword: stri
     }
 }
 
+/**
+ * Remplace uniquement le hash de mot de passe (migration scrypt -> bcrypt).
+ * Ne touche pas à sessionVersion : les sessions existantes restent valides.
+ */
+export const updateUserPasswordHash = async (userId: string, newHashedPassword: string) => {
+    return db.update(users)
+        .set({
+            password: newHashedPassword,
+            updatedAt: new Date()
+        })
+        .where(eq(users.id, userId))
+        .returning({ id: users.id });
+}
+
 export const updateUserProfile = async (userId: string, name: string) => {
     return db.update(users)
         .set({

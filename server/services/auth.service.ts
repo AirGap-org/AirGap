@@ -1,5 +1,5 @@
-import { getUserByEmail } from '#server/services/user.service'
-import { hashUserPassword, verifyUserPassword } from '#server/utils/hashing'
+import { getUserByEmail, updateUserPasswordHash } from '#server/services/user.service'
+import { hashUserPassword, isLegacyPasswordHash, verifyUserPassword } from '#server/utils/hashing'
 import { getErrorCode } from '#server/utils/errors'
 import { db } from '#server/db'
 import { accounts, users } from '~~/drizzle/schema'
@@ -93,6 +93,17 @@ export const loginUser = async (email: string, passwordPlain: string) => {
             statusCode: 403,
             message: 'Ce compte a été supprimé.'
         })
+    }
+
+    // Migration transparente des anciens hashes scrypt vers bcrypt.
+    if (isLegacyPasswordHash(user.password)) {
+        try {
+            const upgradedHash = await hashUserPassword(passwordPlain)
+            await updateUserPasswordHash(user.id, upgradedHash)
+        } catch (error) {
+            // Ne bloque pas la connexion si la migration du hash échoue.
+            console.error('Erreur migration hash mot de passe:', error)
+        }
     }
 
     return user
