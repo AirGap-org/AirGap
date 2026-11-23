@@ -130,9 +130,11 @@ export const createTransaction = async (userId: string, categoryId: string, desc
     return transaction
 }
 
-export const createBudget = async (userId: string, categoryId: string, name = 'Budget test') => {
+export const createBudget = async (userId: string, categoryId: string, name = 'Budget test', accountId?: string) => {
+    const resolvedAccountId = accountId ?? (await createAccount(userId)).id
     const [budget] = await db.insert(budgets).values({
         userId,
+        accountId: resolvedAccountId,
         name,
         amount: '100',
         recurrence: 'Aucune',

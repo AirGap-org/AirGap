@@ -91,6 +91,7 @@ type Category = { id: string; name: string; typeTransaction: string; userId: str
 
 let aliceUser: RegisteredUser
 let aliceAccountId: string
+let bobAccountId: string
 let categoryId: string
 let transactionId: string
 let budgetId: string
@@ -127,6 +128,13 @@ describe('E2E CRUD', () => {
 
         expect(account?.id).toBeTruthy()
         aliceAccountId = account!.id
+
+        const [bobAccount] = await db.select({ id: accounts.id })
+            .from(accounts)
+            .where(eq(accounts.userId, bobRegistration.body.user.id))
+
+        expect(bobAccount?.id).toBeTruthy()
+        bobAccountId = bobAccount!.id
     })
 
     it('inscription, session, utilisateur et dashboard', async () => {
@@ -223,7 +231,7 @@ describe('E2E CRUD', () => {
             amount: 300,
             startDate: '2026-11-01T00:00:00.000Z',
             endDate: '2026-11-30T00:00:00.000Z',
-            accountId: null,
+            accountId: aliceAccountId,
             categoryIds: [categoryId]
         })
         expect(created.status).toBe(200)
@@ -344,6 +352,7 @@ describe('E2E CRUD', () => {
             amount: 100,
             startDate: '2026-11-01T00:00:00.000Z',
             endDate: '2026-11-30T00:00:00.000Z',
+            accountId: bobAccountId,
             categoryIds: [bobCategory.id]
         })
         expect(bobBudget.status).toBe(200)
@@ -418,5 +427,74 @@ describe('E2E CRUD', () => {
 
         expect(stored?.password?.startsWith('$2')).toBe(true)
         expect(stored?.password?.startsWith('$scrypt$')).toBe(false)
+    })
+
+    it('gère les comptes multiples, les types personnalisés et les budgets liés', async () => {
+        const livret = await alice.post<{ account: { id: string } }>('/api/accounts', {
+            accountName: `Livret ${suffix}`,
+            accountType: 'livret_a',
+            openingBalance: 1000
+        })
+        expect(livret.status).toBe(200)
+        const livretId = livret.body.account.id
+
+        const custom = await alice.post<{ account: { id: string } }>('/api/accounts', {
+            accountName: `Bourso ${suffix}`,
+            accountType: 'autre',
+            accountTypeLabel: 'Bourso',
+            openingBalance: 500
+        })
+        expect(custom.status).toBe(200)
+        const customId = custom.body.account.id
+
+        const accounts = await alice.json<{ accounts: Array<{ id: string; currentBalance: number; isArchived: boolean }> }>('/api/accounts')
+        expect(accounts.status).toBe(200)
+        expect(accounts.body.accounts.find((account) => account.id === livretId)?.currentBalance).toBe(1000)
+        expect(accounts.body.accounts.find((account) => account.id === customId)?.currentBalance).toBe(500)
+
+        const category = await createCategory(alice, `Compte catégorie ${suffix}`)
+        const transaction = await alice.post('/api/transactions', {
+            amount: 10,
+            description: `Dépense livret ${suffix}`,
+            date: '2026-11-20T00:00:00.000Z',
+            accountId: livretId,
+            typeTransaction: 'depense',
+            categoryId: category.id
+        })
+        expect(transaction.status).toBe(200)
+
+        const afterTransaction = await alice.json<{ accounts: Array<{ id: string; currentBalance: number }> }>('/api/accounts')
+        expect(afterTransaction.body.accounts.find((account) => account.id === livretId)?.currentBalance).toBe(990)
+
+        const budgetWithoutAccount = await alice.post('/api/budgets', {
+            name: `Budget sans compte ${suffix}`,
+            amount: 100,
+            startDate: '2026-11-01T00:00:00.000Z',
+            endDate: '2026-11-30T00:00:00.000Z',
+            categoryIds: [category.id]
+        })
+        expect(budgetWithoutAccount.status).toBe(400)
+
+        const budget = await alice.post('/api/budgets', {
+            name: `Budget livret ${suffix}`,
+            amount: 100,
+            startDate: '2026-11-01T00:00:00.000Z',
+            endDate: '2026-11-30T00:00:00.000Z',
+            accountId: livretId,
+            categoryIds: [category.id]
+        })
+        expect(budget.status).toBe(200)
+
+        const openingBalanceUpdate = await alice.patch(`/api/accounts/${livretId}`, { openingBalance: 2000 })
+        expect(openingBalanceUpdate.status).toBe(400)
+
+        expect((await bob.patch(`/api/accounts/${livretId}`, { accountName: 'Piraté' })).status).toBe(404)
+        expect((await alice.delete(`/api/accounts/${livretId}`)).status).toBe(409)
+
+        const archive = await alice.patch(`/api/accounts/${customId}`, { isArchived: true })
+        expect(archive.status).toBe(200)
+
+        const afterArchive = await alice.json<{ accounts: Array<{ id: string; isArchived: boolean }> }>('/api/accounts')
+        expect(afterArchive.body.accounts.find((account) => account.id === customId)?.isArchived).toBe(true)
     })
 })
