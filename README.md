@@ -115,6 +115,24 @@ Créez un fichier `.env` à la racine du projet :
 NUXT_DATABASE_URL=postgresql://airgap_user:airgap_password@localhost:5432/airgap
 
 ```
+
+### OAuth (optionnel)
+
+Les boutons OAuth sont masqués tant que les clés ne sont pas configurées. Pour
+les activer, utiliser les surcharges runtime (jamais de secret dans l'image) :
+
+```env
+NUXT_OAUTH_GOOGLE_CLIENT_ID=...
+NUXT_OAUTH_GOOGLE_CLIENT_SECRET=...
+NUXT_OAUTH_GITHUB_CLIENT_ID=...
+NUXT_OAUTH_GITHUB_CLIENT_SECRET=...
+```
+
+Callbacks :
+
+- Google : `https://votre-domaine/auth/google`
+- GitHub : `https://votre-domaine/auth/github`
+
 ## 📊 Base de Données
 
 ### Schéma

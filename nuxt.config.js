@@ -33,13 +33,16 @@ export default defineNuxtConfig({
             predictUrl: process.env.AIRGAP_AI_PREDICT_URL || 'https://airgap-ai.aldwin-weber.fr/predire',
         },
         oauth: {
+            // À surcharger à l'exécution avec NUXT_OAUTH_GOOGLE_CLIENT_ID/SECRET
+            // et NUXT_OAUTH_GITHUB_CLIENT_ID/SECRET. Ne jamais baker les secrets
+            // OAuth dans l'image au build.
             google: {
-                clientId: process.env.GOOGLE_CLIENT_ID,
-                clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+                clientId: '',
+                clientSecret: '',
             },
             github: {
-                clientId: process.env.GITHUB_CLIENT_ID,
-                clientSecret: process.env.GITHUB_CLIENT_SECRET,
+                clientId: '',
+                clientSecret: '',
             }
         }
     },
