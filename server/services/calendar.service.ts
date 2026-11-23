@@ -1,5 +1,5 @@
 import {and, desc, eq, gte, lt, sql} from 'drizzle-orm'
-import {assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
+import {accounts, assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
 import {db} from "#server/db";
 
 export const getUserTransactionsByYear = async (userId: string, year: number, month?: number, quarter?: number) => {
@@ -29,7 +29,13 @@ export const getUserTransactionsByYear = async (userId: string, year: number, mo
             lt(transactions.date, startDate)
         ));
 
-    const initialBalance = Number(balanceRow?.balance ?? 0);
+    const [openingRow] = await db.select({
+        balance: sql<string>`COALESCE(SUM(${accounts.balance}::numeric), 0)`
+    })
+        .from(accounts)
+        .where(eq(accounts.userId, userId));
+
+    const initialBalance = Number(balanceRow?.balance ?? 0) + Number(openingRow?.balance ?? 0);
 
     const rows = await db.select({
         id: transactions.id,

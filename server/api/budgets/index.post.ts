@@ -1,6 +1,6 @@
 import {z} from 'zod'
 import {createBudget} from "#server/services/budgets.service";
-import {assertAccountOwnership} from "#server/utils/ownership";
+import {assertAccountAvailable} from "#server/utils/ownership";
 import {assertCategoriesOwnership} from "#server/utils/categories";
 
 const createBudgetSchema = z.object({
@@ -13,7 +13,7 @@ const createBudgetSchema = z.object({
         .max(1_000_000_000_000, "Le montant est trop élevé"),
     startDate: z.coerce.date({message: "La date de début est requise"}),
     endDate: z.coerce.date({message: "La date de fin est requise"}),
-    accountId: z.string().uuid().optional().nullable(),
+    accountId: z.string().uuid({message: "Le compte est requis"}),
     categoryIds: z.array(z.string().uuid()).max(100, "Trop de catégories").optional()
 }).refine((data) => data.endDate >= data.startDate, {
     message: "La date de fin doit être postérieure à la date de début",
@@ -30,8 +30,8 @@ export default defineEventHandler(async (event) => {
 
     const {categoryIds, ...restBody} = body.data
 
-    // Vérifier que le compte (si fourni) appartient bien à l'utilisateur
-    await assertAccountOwnership(restBody.accountId, user.id)
+    // Un budget est toujours rattaché à un compte actif de l'utilisateur.
+    await assertAccountAvailable(restBody.accountId, user.id)
     await assertCategoriesOwnership(categoryIds, user.id)
 
     const budgetData = {

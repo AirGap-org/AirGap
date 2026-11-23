@@ -1,6 +1,6 @@
 import {and, desc, eq} from 'drizzle-orm'
 import {db} from "#server/db";
-import {assoBudgetCategories, budgets, categories} from "~~/drizzle/schema";
+import {accounts, assoBudgetCategories, budgets, categories} from "~~/drizzle/schema";
 
 type BudgetWithCategories = {
     id: string;
@@ -8,7 +8,8 @@ type BudgetWithCategories = {
     amount: string;
     startDate: Date;
     endDate: Date;
-    accountId: string | null;
+    accountId: string;
+    accountName: string;
     categories: { id: string; name: string }[];
 };
 
@@ -18,7 +19,8 @@ type BudgetRow = {
     amount: string;
     startDate: Date;
     endDate: Date;
-    accountId: string | null;
+    accountId: string;
+    accountName: string | null;
     categoryName: string | null;
     categoryId: string | null;
 };
@@ -35,6 +37,7 @@ const mapBudgetRows = (rows: BudgetRow[]): BudgetWithCategories[] => {
                 startDate: row.startDate,
                 endDate: row.endDate,
                 accountId: row.accountId,
+                accountName: row.accountName ?? '',
                 categories: []
             });
         }
@@ -61,11 +64,13 @@ export const getUserBudgets = async (userId: string) => {
         startDate: budgets.startDate,
         endDate: budgets.endDate,
         accountId: budgets.accountId,
+        accountName: accounts.accountName,
 
         categoryName: categories.name,
         categoryId: categories.id,
     })
         .from(budgets)
+        .leftJoin(accounts, eq(budgets.accountId, accounts.id))
         .leftJoin(assoBudgetCategories, eq(budgets.id, assoBudgetCategories.budgetId))
         .leftJoin(categories, eq(assoBudgetCategories.categoryId, categories.id))
         .where(eq(budgets.userId, userId))
@@ -187,10 +192,12 @@ export const getBudgetById = async (budgetId: string, userId: string) => {
         startDate: budgets.startDate,
         endDate: budgets.endDate,
         accountId: budgets.accountId,
+        accountName: accounts.accountName,
         categoryName: categories.name,
         categoryId: categories.id,
     })
         .from(budgets)
+        .leftJoin(accounts, eq(budgets.accountId, accounts.id))
         .leftJoin(assoBudgetCategories, eq(budgets.id, assoBudgetCategories.budgetId))
         .leftJoin(categories, eq(assoBudgetCategories.categoryId, categories.id))
         .where(and(eq(budgets.id, budgetId), eq(budgets.userId, userId)));

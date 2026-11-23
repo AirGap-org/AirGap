@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lt, sql } from 'drizzle-orm'
 import { db } from '#server/db'
 import { assoTransactionsCategories, categories, transactions } from '~~/drizzle/schema'
+import { getAccountsWithBalances } from '#server/services/accounts.service'
 
 type PeriodRange = {
     start: Date
@@ -37,7 +38,7 @@ export const getDashboard = async (userId: string) => {
     const current = monthRange(now.getFullYear(), now.getMonth())
     const previous = monthRange(now.getFullYear(), now.getMonth() - 1)
 
-    const [totals, currentMonth, previousMonth, recentRows] = await Promise.all([
+    const [totals, currentMonth, previousMonth, recentRows, accountRows] = await Promise.all([
         aggregatePeriod(userId),
         aggregatePeriod(userId, current),
         aggregatePeriod(userId, previous),
@@ -54,11 +55,24 @@ export const getDashboard = async (userId: string) => {
             .leftJoin(categories, eq(categories.id, assoTransactionsCategories.categoryId))
             .where(eq(transactions.userId, userId))
             .orderBy(desc(transactions.date))
-            .limit(5)
+            .limit(5),
+        getAccountsWithBalances(userId)
     ])
+
+    const netWorth = accountRows.reduce((sum, account) => sum + account.currentBalance, 0)
 
     return {
         totals,
+        netWorth,
+        accounts: accountRows.map((account) => ({
+            id: account.id,
+            name: account.accountName,
+            type: account.accountType,
+            typeLabel: account.accountTypeLabel,
+            currentBalance: account.currentBalance,
+            currency: account.currency,
+            isArchived: account.isArchived
+        })),
         currentMonth,
         previousMonth,
         recentTransactions: recentRows.map((row) => ({

@@ -2,6 +2,7 @@ import {db} from "#server/db";
 import {eq} from "drizzle-orm";
 import {users} from "~~/drizzle/schema";
 import { establishOAuthSession, redirectOAuth } from "#server/utils/oauth";
+import { ensureDefaultAccount } from "#server/services/accounts.service";
 
 export default defineOAuthGitHubEventHandler({
     config: {
@@ -57,6 +58,7 @@ export default defineOAuthGitHubEventHandler({
             }
 
             dbUser = newUser;
+            await ensureDefaultAccount(newUser.id);
         }
 
         return establishOAuthSession(event, {

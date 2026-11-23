@@ -2,6 +2,7 @@ import { db } from "#server/db";
 import { users } from "~~/drizzle/schema";
 import { eq } from "drizzle-orm";
 import { establishOAuthSession, redirectOAuth } from "#server/utils/oauth";
+import { ensureDefaultAccount } from "#server/services/accounts.service";
 
 export default defineOAuthGoogleEventHandler({
     async onSuccess(event, { user }) {
@@ -32,6 +33,7 @@ export default defineOAuthGoogleEventHandler({
             }
 
             dbUser = newUser;
+            await ensureDefaultAccount(newUser.id);
         }
 
         return establishOAuthSession(event, {

@@ -63,9 +63,11 @@ export const registerUser = async (data: typeof users.$inferInsert) => {
             await tx.insert(accounts).values({
                 userId: newUser.id,
                 accountName: 'Compte Courant',
-                accountType: 'Courant',
+                accountType: 'courant',
+                accountTypeLabel: null,
                 balance: '0',
-                currency: 'EUR'
+                currency: 'EUR',
+                isArchived: false
             })
 
             return newUser

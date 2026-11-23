@@ -1,7 +1,8 @@
 import {z} from 'zod';
 import {importTransactionsBulk} from "#server/services/transactions.service";
 import {assertCategoriesOwnership} from "#server/utils/categories";
-import {assertAccountsOwnership} from "#server/utils/ownership";
+import {assertAccountsAvailable} from "#server/utils/ownership";
+import {ensureDefaultAccount} from "#server/services/accounts.service";
 import {getErrorMessage} from "#server/utils/errors";
 import {enforceRateLimit} from "#server/utils/rateLimit";
 
@@ -40,14 +41,18 @@ export default defineEventHandler(async (event) => {
             user.id
         )
 
-        await assertAccountsOwnership(
-            body.data.transactions
-                .map(transaction => transaction.accountId)
-                .filter((accountId): accountId is string => Boolean(accountId)),
+        const defaultAccount = await ensureDefaultAccount(user.id)
+        const transactions = body.data.transactions.map((transaction) => ({
+            ...transaction,
+            accountId: transaction.accountId ?? defaultAccount.id
+        }))
+
+        await assertAccountsAvailable(
+            transactions.map(transaction => transaction.accountId),
             user.id
         )
 
-        const count = await importTransactionsBulk(user.id, body.data.transactions);
+        const count = await importTransactionsBulk(user.id, transactions);
         return {success: true, count};
     } catch (error) {
         console.error("Erreur SQL Import:", error);

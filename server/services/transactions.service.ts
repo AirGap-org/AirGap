@@ -1,5 +1,5 @@
 import {and, desc, eq, isNull, or} from 'drizzle-orm'
-import {assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
+import {accounts, assoTransactionsCategories, categories, transactions} from "~~/drizzle/schema";
 import type {TransactionType} from "~~/drizzle/schema";
 import {db} from "#server/db";
 import {transactionSignature} from "#server/utils/signature";
@@ -67,11 +67,13 @@ export const getTransactionById = async (transactionId: string, userId: string) 
         date: transactions.date,
         typeTransaction: transactions.typeTransaction,
         accountId: transactions.accountId,
+        accountName: accounts.accountName,
         devise: transactions.devise,
         categoryName: categories.name,
         categoryId: categories.id
     })
         .from(transactions)
+        .leftJoin(accounts, eq(transactions.accountId, accounts.id))
         .leftJoin(assoTransactionsCategories, eq(transactions.id, assoTransactionsCategories.transactionId))
         .leftJoin(categories, eq(assoTransactionsCategories.categoryId, categories.id))
         .where(and(eq(transactions.id, transactionId), eq(transactions.userId, userId)))
@@ -160,10 +162,13 @@ export const getUserTransactions = async (userId: string) => {
         description: transactions.description,
         date: transactions.date,
         typeTransaction: transactions.typeTransaction,
+        accountId: transactions.accountId,
+        accountName: accounts.accountName,
         categoryName: categories.name,
         categoryId: categories.id
     })
         .from(transactions)
+        .leftJoin(accounts, eq(transactions.accountId, accounts.id))
         .leftJoin(assoTransactionsCategories, eq(transactions.id, assoTransactionsCategories.transactionId))
         .leftJoin(categories, eq(assoTransactionsCategories.categoryId, categories.id))
         .where(eq(transactions.userId, userId))
