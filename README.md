@@ -275,6 +275,19 @@ de l'IP client pour le rate-limiting :
 **En production derrière un proxy de confiance** : configurez le proxy pour strip
 le XFF entrant, puis passez `TRUST_PROXY_HEADERS=true`.
 
+### Cloudflare derrière une passerelle privée
+
+Si Cloudflare atteint l'origine via une passerelle privée (par exemple
+`10.20.0.2`), renseignez son CIDR dans `TRUSTED_PROXY_CIDRS` :
+
+```env
+TRUSTED_PROXY_CIDRS=10.20.0.2/32
+```
+
+L'IP client est alors lue depuis `CF-Connecting-IP`, mais uniquement si la
+connexion TCP vient réellement de cette passerelle. Le port applicatif ne doit
+pas être joignable directement depuis Internet.
+
 ### Rate-limiting en multi-instance
 
 Le rate-limit utilise le storage Nitro (**en mémoire par défaut**). En
@@ -291,6 +304,19 @@ nitro: {
 ```
 
 Seuils configurables via `RATE_LIMIT_MAX_ATTEMPTS` et `RATE_LIMIT_LOCKOUT_MINUTES`.
+
+### Sauvegardes PostgreSQL
+
+Le script `scripts/backup-prod.sh` sauvegarde la base dans `/app/backups`, vérifie
+l'intégrité du gzip et supprime les fichiers de plus de 30 jours.
+
+Exemple de cron quotidien :
+
+```cron
+0 3 * * * deploy /usr/local/sbin/airgap-backup
+```
+
+La restauration doit être testée régulièrement sur une base dédiée.
 
 ## 📱 Responsive Design
 
