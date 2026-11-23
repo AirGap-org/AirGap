@@ -76,6 +76,7 @@
 
           <!-- Bouton Google -->
           <Button
+              v-if="oauthProviders?.google"
               type="button"
               variant="outline"
               class="w-full cursor-pointer mt-2"
@@ -87,6 +88,7 @@
 
           <!-- Bouton GitHub -->
           <Button
+              v-if="oauthProviders?.github"
               type="button"
               variant="outline"
               class="w-full cursor-pointer mt-2"
@@ -131,6 +133,7 @@ const errorMessage = ref("");
 const route = useRoute();
 const router = useRouter();
 const { fetch: refreshSession } = useUserSession();
+const { data: oauthProviders } = await useFetch('/api/auth/providers');
 
 if(route.query.error === 'wrong_provider') {
   errorMessage.value = 'Votre email est déjà utilisé pour un autre compte';
