@@ -24,12 +24,12 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
-    "@nuxt/ui": "^4.6.0",
+    "@nuxt/ui": "^4.13.0",
     "@oslojs/encoding": "^1.1.0",
     "@oslojs/otp": "^1.1.0",
     "@unovis/ts": "^1.6.4",
     "@unovis/vue": "^1.6.4",
-    "@vite-pwa/nuxt": "^2.0.1",
+    "@vite-pwa/nuxt": "^2.0.3",
     "@vueuse/core": "^15.0.0",
     "bcrypt": "^6.0.0",
     "class-variance-authority": "^0.7.1",
@@ -42,8 +42,8 @@
     "postcss": "^8.5.9",
     "qrcode": "^1.5.4",
     "reka-ui": "^2.9.5",
-    "tailwind-merge": "^3.5.0",
-    "vue": "^3.5.31",
+    "tailwind-merge": "^3.7.1",
+    "vue": "^3.5.46",
     "vue-router": "^5.0.4",
     "zod": "^4.3.6"
   },
@@ -71,7 +71,7 @@
     "tsx": "^4.23.15",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.58.1",
-    "vitest": "^5.1.0",
+    "vitest": "^5.1.1",
     "vue-tsc": "^3.3.14"
   }
 }
